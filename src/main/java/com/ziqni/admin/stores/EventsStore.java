@@ -7,6 +7,7 @@ import com.ziqni.admin.concurrent.QueueJob;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.api.EventsApiWs;
+import com.ziqni.admin.sdk.model.CreateEventRequest;
 import com.ziqni.admin.sdk.model.Event;
 import com.ziqni.admin.sdk.model.ModelApiResponse;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -17,9 +18,9 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class EventsStore extends Store implements CacheLoader<@NonNull String, EventsStore.EventTransaction> {
 
@@ -37,11 +38,11 @@ public class EventsStore extends Store implements CacheLoader<@NonNull String, E
                 .build(this::cacheLoader);
     }
 
-    public CompletableFuture<ModelApiResponse> pushEvent(Event basicEventModel) {
-        return pushEvent(List.of(basicEventModel));
+    public CompletableFuture<ModelApiResponse> pushEvent(CreateEventRequest event) {
+        return pushEvent(List.of(event));
     }
 
-    public CompletableFuture<ModelApiResponse> pushEvent(List<Event> events) {
+    public CompletableFuture<ModelApiResponse> pushEvent(List<CreateEventRequest> events) {
         try {
             return api.createEvents(events)
                     .thenApply(modelApiResponse -> {
@@ -65,28 +66,28 @@ public class EventsStore extends Store implements CacheLoader<@NonNull String, E
         }
     }
 
-    public CompletableFuture<ModelApiResponse> pushEventTransaction(Event basicEventModel) {
+    public CompletableFuture<ModelApiResponse> pushEventTransaction(CreateEventRequest event) {
         return QueueJob.Submit(
                 ZiqniExecutors.EventStoreSingleThreadedExecutor,
                 () -> {
-                    basicEventModel.batchId().map(v1 ->
-                            Objects.requireNonNull(cache.get(v1)).addBasicEvent(basicEventModel)
+                    Optional.ofNullable(event.getBatchId()).map(v1 ->
+                            Objects.requireNonNull(cache.get(v1)).addBasicEvent(event)
                     );
-                    return pushEvent(basicEventModel);
+                    return pushEvent(event);
                 }
         );
     }
 
-    public CompletableFuture<List<Event>> findByBatchId(String batchId) {
-        return QueueJob.Submit(
-                ZiqniExecutors.EventStoreSingleThreadedExecutor,
-                () -> {
-                    final var out = new CompletableFuture<List<Event>>();
-                    out.complete(Objects.requireNonNull(cache.get(batchId)).buffer);
-                    return out;
-                }
-        );
-    }
+//    public CompletableFuture<List<Event>> findByBatchId(String batchId) {
+//        return QueueJob.Submit(
+//                ZiqniExecutors.EventStoreSingleThreadedExecutor,
+//                () -> {
+//                    final var out = new CompletableFuture<List<Event>>();
+//                    out.complete(Objects.requireNonNull(cache.get(batchId)).buffer);
+//                    return out;
+//                }
+//        );
+//    }
 
 
 
@@ -102,13 +103,13 @@ public class EventsStore extends Store implements CacheLoader<@NonNull String, E
 
 
     public static class EventTransaction {
-        private final List<Event> buffer = new ArrayList<>();
+        private final List<CreateEventRequest> buffer = new ArrayList<>();
 
-        public boolean addBasicEvent(Event e) {
+        public boolean addBasicEvent(CreateEventRequest e) {
             return buffer.add(e);
         }
 
-        public List<Event> getEvents() {
+        public List<CreateEventRequest> getEvents() {
             return buffer;
         }
     }

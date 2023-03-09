@@ -28,9 +28,6 @@ public abstract class ZiqniExecutors {
     // CACHES CONNECTION //
     public static ForkJoinPool GlobalZiqniCachesExecutor = newForkJoinPool(Runtime.getRuntime().availableProcessors(), "ziqni-caches");
 
-    // SCALA CLIENT //
-    public static ExecutorService GlobalZiqniApiClientContextExecutor = newCachedThreadPool("ziqni-scala-transformer-context");
-
     // ON MESSAGE IN //
     public static ExecutorService GlobalMessageQueueWorkExecutor = newCachedThreadPool("ziqni-message-queue-work-executor");
 
