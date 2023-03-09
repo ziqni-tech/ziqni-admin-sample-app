@@ -1,9 +1,13 @@
 package com.ziqni.admin.stores;
 
 import com.github.benmanes.caffeine.cache.*;
+import com.google.common.eventbus.Subscribe;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.model.Achievement;
+import com.ziqni.admin.sdk.model.EntityChanged;
+import com.ziqni.admin.sdk.model.EntityStateChanged;
+import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -18,7 +22,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class AchievementsStore extends Store implements AsyncCacheLoader<@NonNull String, @NonNull Achievement>, RemovalListener<@NonNull String, @NonNull Achievement> {
+public class AchievementsStore extends Store<@NonNull String, @NonNull Achievement>{
+
 
 	private static final Logger logger = LoggerFactory.getLogger(AchievementsStore.class);
 
@@ -30,9 +35,15 @@ public class AchievementsStore extends Store implements AsyncCacheLoader<@NonNul
 			.executor(ZiqniExecutors.GlobalZiqniCachesExecutor)
 			.buildAsync(this);
 
-	public AchievementsStore(ZiqniAdminApiFactory ziqniAdminApiFactory) {
-		super(ziqniAdminApiFactory);
+	public AchievementsStore(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
+		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
 	}
+
+	@Override
+	public Class<@NonNull Achievement> getTypeClass() {
+		return Achievement.class;
+	}
+
 
 	/**
 	 * Get methods
@@ -76,5 +87,17 @@ public class AchievementsStore extends Store implements AsyncCacheLoader<@NonNul
 	@Override
 	public void onRemoval(@Nullable String key, @Nullable Achievement value, RemovalCause cause) {
 
+	}
+
+	@Subscribe
+	public void onEntityChanged(EntityChanged entityChanged){
+		if(getSimpleTypeClassName().equals(entityChanged.getEntityType())) {
+		}
+	}
+
+	@Subscribe
+	public void onEntityStateChanged(EntityStateChanged entityStateChanged){
+		if(getSimpleTypeClassName().equals(entityStateChanged.getEntityType())) {
+		}
 	}
 }

@@ -5,6 +5,7 @@ import com.ziqni.admin.collections.Tuple;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.model.*;
+import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -16,19 +17,26 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class ActionTypesStore extends Store implements AsyncCacheLoader<@NonNull String, ActionTypesStore.ActionTypeEntry>, RemovalListener<@NonNull String, ActionTypesStore.ActionTypeEntry> {
+public class ActionTypesStore extends Store<@NonNull String, ActionType> {
 
 	private static final Logger logger = LoggerFactory.getLogger(ActionTypesStore.class);
 
-	public final AsyncLoadingCache<String, ActionTypeEntry> cache = Caffeine
+	public final AsyncLoadingCache<String, ActionType> cache = Caffeine
 			.newBuilder()
 			.maximumSize(10_000)
 			.expireAfterAccess(1, TimeUnit.DAYS)
 			.executor(ZiqniExecutors.GlobalZiqniCachesExecutor)
 			.evictionListener(this).buildAsync(this);
 
-	public ActionTypesStore(ZiqniAdminApiFactory ziqniAdminApiFactory) {
-		super(ziqniAdminApiFactory);
+	public ActionTypesStore(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
+		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
+	}
+
+
+
+	@Override
+	public Class<@NonNull ActionType> getTypeClass() {
+		return ActionType.class;
 	}
 
 	/**
@@ -38,7 +46,7 @@ public class ActionTypesStore extends Store implements AsyncCacheLoader<@NonNull
 		return getAction(action).thenApply(Objects::nonNull);
 	}
 
-	public CompletableFuture<ActionTypeEntry> getAction(String action) {
+	public CompletableFuture<ActionType> getAction(String action) {
 		return cache.get(action);
 	}
 
@@ -85,7 +93,7 @@ public class ActionTypesStore extends Store implements AsyncCacheLoader<@NonNull
 //								.stream()
 //								.filter(x -> x.getExternalReference().equals(action))
 //								.findFirst().map(result -> {
-//									put(new ActionTypeEntry( action, result.getId(), toCreate.getName() ));
+//									put(new ActionType( action, result.getId(), toCreate.getName() ));
 //									return result;
 //								})
 //						);
@@ -93,10 +101,10 @@ public class ActionTypesStore extends Store implements AsyncCacheLoader<@NonNull
 //		});
 //	}
 
-	public void put(ActionTypeEntry actionType){
-		final var fut = new CompletableFuture<ActionTypeEntry>();
+	public void put(ActionType actionType){
+		final var fut = new CompletableFuture<ActionType>();
 		fut.complete(actionType);
-		cache.put(actionType.key, fut);
+		cache.put(actionType.getKey(), fut);
 	}
 
 	/**
@@ -166,7 +174,7 @@ public class ActionTypesStore extends Store implements AsyncCacheLoader<@NonNull
 	 *                              caught, the thread's interrupt status is set
 	 */
 	@Override
-	public CompletableFuture<? extends ActionTypeEntry> asyncLoad(@NonNull String key, Executor executor) throws Exception {
+	public CompletableFuture<? extends ActionType> asyncLoad(@NonNull String key, Executor executor) throws Exception {
 		return asyncLoadAll(Set.of(key),executor).thenApply(map -> map.get(key));
 	}
 
@@ -193,7 +201,7 @@ public class ActionTypesStore extends Store implements AsyncCacheLoader<@NonNull
 	 *                              caught, the thread's interrupt status is set
 	 */
 	@Override
-	public CompletableFuture<? extends Map<? extends @NonNull String, ? extends ActionTypeEntry>> asyncLoadAll(Set<? extends @NonNull String> keys, Executor executor) throws Exception {
+	public CompletableFuture<? extends Map<? extends @NonNull String, ? extends ActionType>> asyncLoadAll(Set<? extends @NonNull String> keys, Executor executor) throws Exception {
 		return getZiqniAdminApiFactory().getActionTypesApi().getActionTypesByQuery(
 				new QueryRequest()
 						.skip(0)
@@ -209,7 +217,7 @@ public class ActionTypesStore extends Store implements AsyncCacheLoader<@NonNull
 					});
 
 					return Optional.ofNullable(actionTypeResponse.getResults())
-							.map(a-> a.stream().collect(Collectors.toMap(ActionType::getKey, ActionTypeEntry::new)))
+							.map(a-> a.stream().collect(Collectors.toMap(ActionType::getKey, x->x)))
 							.orElse(null);
 				});
 
@@ -226,58 +234,13 @@ public class ActionTypesStore extends Store implements AsyncCacheLoader<@NonNull
 	 * @param cause the reason for which the entry was removed
 	 */
 	@Override
-	public void onRemoval(@Nullable String key, ActionTypeEntry value, RemovalCause cause) {
+	public void onRemoval(@Nullable String key, ActionType value, RemovalCause cause) {
 
 	}
 
-	public static class ActionTypeEntry {
-		public final String key;
-		public String id;
-		public String name;
+	private static class UpdateAction extends Tuple<ActionType,UpdateActionTypeRequest> {
 
-		public ActionTypeEntry(String key) {
-			this.key = key;
-		}
-
-		public ActionTypeEntry(String key, String id, String name) {
-			this.key = key;
-			this.id = id;
-			this.name = name;
-		}
-
-		public ActionTypeEntry(ActionType actionType) {
-			this.key = actionType.getKey();
-			this.id = actionType.getId();
-			this.name = actionType.getName();
-		}
-
-		public ActionTypeEntry setId(String id) {
-			this.id = id;
-			return this;
-		}
-
-		public ActionTypeEntry setName(String name) {
-			this.name = name;
-			return this;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) return true;
-			if (!(o instanceof ActionTypeEntry)) return false;
-			ActionTypeEntry that = (ActionTypeEntry) o;
-			return key.equals(that.key);
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(key);
-		}
-	}
-
-	private static class UpdateAction extends Tuple<ActionTypeEntry,UpdateActionTypeRequest> {
-
-		public UpdateAction(ActionTypeEntry one, UpdateActionTypeRequest two) {
+		public UpdateAction(ActionType one, UpdateActionTypeRequest two) {
 			super(one, two);
 		}
 	}

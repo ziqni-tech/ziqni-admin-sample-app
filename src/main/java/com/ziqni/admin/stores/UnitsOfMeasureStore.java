@@ -5,6 +5,7 @@ import com.ziqni.admin.concurrent.QueueJob;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.model.*;
+import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -16,7 +17,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class UnitsOfMeasureStore extends Store implements AsyncCacheLoader<@NonNull String, @NonNull UnitOfMeasure>, RemovalListener<@NonNull String, @NonNull UnitOfMeasure> {
+public class UnitsOfMeasureStore extends Store<@NonNull String, @NonNull UnitOfMeasure> {
 
 	private static final Logger logger = LoggerFactory.getLogger(UnitsOfMeasureStore.class);
 
@@ -28,8 +29,13 @@ public class UnitsOfMeasureStore extends Store implements AsyncCacheLoader<@NonN
 			.executor(ZiqniExecutors.GlobalZiqniCachesExecutor)
 			.buildAsync(this);
 
-	public UnitsOfMeasureStore(ZiqniAdminApiFactory ziqniAdminApiFactory) {
-		super(ziqniAdminApiFactory);
+	public UnitsOfMeasureStore(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
+		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
+	}
+
+	@Override
+	public Class<@NonNull UnitOfMeasure> getTypeClass() {
+		return UnitOfMeasure.class;
 	}
 
 	/**

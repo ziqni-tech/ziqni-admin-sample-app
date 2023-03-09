@@ -6,6 +6,7 @@ import com.ziqni.admin.concurrent.ZiqniExecutors;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.api.ProductsApiWs;
 import com.ziqni.admin.sdk.model.*;
+import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -17,14 +18,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class ProductsStore extends Store implements AsyncCacheLoader<@NonNull String, @NonNull Product>, RemovalListener<@NonNull String, @NonNull Product> {
+public class ProductsStore extends Store<@NonNull String, @NonNull Product> {
 
 	private static final Logger logger = LoggerFactory.getLogger(ProductsStore.class);
 	private  final ProductsApiWs api;
 	private static final AsyncConcurrentHashMap<String, String> refIdCache = new AsyncConcurrentHashMap<>();
 	public final AsyncLoadingCache<@NonNull String, @NonNull Product> cache;
-	public ProductsStore(ZiqniAdminApiFactory ziqniAdminApiFactory) {
-		super(ziqniAdminApiFactory);
+	public ProductsStore(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
+		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
 		api = ziqniAdminApiFactory.getProductsApi();
 		cache = Caffeine
 				.newBuilder()
@@ -33,6 +34,11 @@ public class ProductsStore extends Store implements AsyncCacheLoader<@NonNull St
 				.evictionListener(this)
 				.executor(ZiqniExecutors.GlobalZiqniCachesExecutor)
 				.buildAsync(this);
+	}
+
+	@Override
+	public Class<@NonNull Product> getTypeClass() {
+		return Product.class;
 	}
 
 

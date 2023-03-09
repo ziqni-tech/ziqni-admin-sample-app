@@ -3,14 +3,13 @@ package com.ziqni.admin;
 import com.google.common.eventbus.Subscribe;
 import com.ziqni.admin.bus.ZiqniEventBus;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
-import com.ziqni.admin.handlers.ZiqniSystemCallbackHandler;
+import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.configuration.AdminApiClientConfiguration;
 import com.ziqni.admin.sdk.context.WSClientConnected;
 import com.ziqni.admin.sdk.context.WSClientConnecting;
 import com.ziqni.admin.sdk.context.WSClientDisconnected;
 import com.ziqni.admin.sdk.context.WSClientSevereFailure;
-import com.ziqni.admin.stores.Store;
 import com.ziqni.admin.stores.Stores;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,14 +25,14 @@ public class ZiqniAdmin {
     private final ZiqniAdminApiFactory ziqniAdminApiFactory;
     private final AdminApiClientConfiguration configuration;
     private final AtomicBoolean waitingForReconnect = new AtomicBoolean(false);
-    private final ZiqniSystemCallbackHandler ziqniSystemCallbackHandler;
+    private final ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher;
     private final Stores ziqniStores;
 
     public ZiqniAdmin(ZiqniAdminApiFactory ziqniAdminApiFactory, AdminApiClientConfiguration configuration) {
-        this.ziqniAdminApiFactory = ziqniAdminApiFactory;
         this.configuration = configuration;
-        this.ziqniStores = new Stores(ziqniAdminApiFactory);
-        this.ziqniSystemCallbackHandler = new ZiqniSystemCallbackHandler(new ZiqniEventBus(),ziqniAdminApiFactory);
+        this.ziqniAdminApiFactory = ziqniAdminApiFactory;
+        this.ziqniSystemCallbackWatcher = new ZiqniSystemCallbackWatcher(ziqniAdminApiFactory);
+        this.ziqniStores = new Stores(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
     }
 
     public void Ignition(String[] args) throws Exception {
@@ -44,6 +43,9 @@ public class ZiqniAdmin {
                     .exceptionally(throwable -> {
                         logger.error("Failed to load the cache stores", throwable);
                         return null;
+                    })
+                    .thenAccept(stores -> {
+                        this.ziqniSystemCallbackWatcher.load();
                     });
 
             // implement shutdown hook
@@ -66,7 +68,7 @@ public class ZiqniAdmin {
     //////// ADMIN API CLIENT EVENTBUS ////////
     @Subscribe
     public void onWSClientConnected(WSClientConnected change) {
-        this.ziqniSystemCallbackHandler.load();
+        this.ziqniStores.init();
     }
 
     @Subscribe

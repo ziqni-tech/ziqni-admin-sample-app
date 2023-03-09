@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.*;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.model.Reward;
+import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -18,7 +19,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class RewardStore extends Store implements AsyncCacheLoader<@NonNull String, @NonNull Reward>, RemovalListener<@NonNull String, @NonNull Reward> {
+public class RewardStore extends Store<@NonNull String, @NonNull Reward> {
 
     private static final Logger logger = LoggerFactory.getLogger(RewardStore.class);
 
@@ -30,8 +31,13 @@ public class RewardStore extends Store implements AsyncCacheLoader<@NonNull Stri
             .executor(ZiqniExecutors.GlobalZiqniCachesExecutor)
             .buildAsync(this);
 
-    public RewardStore(ZiqniAdminApiFactory ziqniAdminApiFactory) {
-        super(ziqniAdminApiFactory);
+    public RewardStore(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
+        super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
+    }
+
+    @Override
+    public Class<@NonNull Reward> getTypeClass() {
+        return null;
     }
 
     public CompletableFuture<Optional<Reward>> getReward(String id) {

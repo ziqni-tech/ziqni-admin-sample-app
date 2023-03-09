@@ -8,7 +8,6 @@ import com.ziqni.admin.concurrent.ZiqniExecutors;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.api.EventsApiWs;
 import com.ziqni.admin.sdk.model.CreateEventRequest;
-import com.ziqni.admin.sdk.model.Event;
 import com.ziqni.admin.sdk.model.ModelApiResponse;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -22,16 +21,18 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-public class EventsStore extends Store implements CacheLoader<@NonNull String, EventsStore.EventTransaction> {
+public class EventsStore implements CacheLoader<@NonNull String, EventsStore.EventTransaction> {
 
     private static final Logger logger = LoggerFactory.getLogger(EventsStore.class);
+
+    private final ZiqniAdminApiFactory ziqniAdminApiFactory;
 
     private final LoadingCache<@NonNull String, @NonNull EventTransaction> cache;
 
     private final EventsApiWs api;
 
     public EventsStore(ZiqniAdminApiFactory ziqniAdminApiFactory) {
-        super(ziqniAdminApiFactory);
+        this.ziqniAdminApiFactory = ziqniAdminApiFactory;
         this.api = ziqniAdminApiFactory.getEventsApi();
         cache = Caffeine.newBuilder()
                 .expireAfterAccess(15, TimeUnit.MINUTES)

@@ -1,11 +1,10 @@
 package com.ziqni.admin.stores;
 
-import com.github.benmanes.caffeine.cache.AsyncCacheLoader;
 import com.github.benmanes.caffeine.cache.RemovalCause;
-import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.ziqni.admin.collections.AsyncConcurrentHashMap;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.model.Member;
+import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -20,14 +19,19 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class MemberStore extends Store implements AsyncCacheLoader<@NonNull String, @NonNull Member> , RemovalListener<@NonNull String, @NonNull Member> {
+public class MemberStore extends Store<@NonNull String, @NonNull Member> {
 
     private static final Logger logger = LoggerFactory.getLogger(MemberStore.class);
     private static final AsyncConcurrentHashMap<String, String> refIdCache = new AsyncConcurrentHashMap<>();
 
 
-    public MemberStore(ZiqniAdminApiFactory ziqniAdminApiFactory) {
-        super(ziqniAdminApiFactory);
+    public MemberStore(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
+        super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
+    }
+
+    @Override
+    public Class<@NonNull Member> getTypeClass() {
+        return Member.class;
     }
 
 

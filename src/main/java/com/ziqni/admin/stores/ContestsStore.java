@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.*;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.model.Contest;
+import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -18,7 +19,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class ContestsStore extends Store implements AsyncCacheLoader<@NonNull String, @NonNull Contest>, RemovalListener<@NonNull String, @NonNull Contest> {
+public class ContestsStore extends Store<@NonNull String, @NonNull Contest> {
 
 	private static final Logger logger = LoggerFactory.getLogger(ContestsStore.class);
 
@@ -30,8 +31,13 @@ public class ContestsStore extends Store implements AsyncCacheLoader<@NonNull St
 			.executor(ZiqniExecutors.GlobalZiqniCachesExecutor)
 			.buildAsync(this);
 
-	public ContestsStore(ZiqniAdminApiFactory ziqniAdminApiFactory) {
-		super(ziqniAdminApiFactory);
+	public ContestsStore(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
+		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
+	}
+
+	@Override
+	public Class<@NonNull Contest> getTypeClass() {
+		return Contest.class;
 	}
 
 

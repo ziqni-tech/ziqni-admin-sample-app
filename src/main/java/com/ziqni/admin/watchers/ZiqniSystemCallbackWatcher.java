@@ -1,4 +1,4 @@
-package com.ziqni.admin.handlers;
+package com.ziqni.admin.watchers;
 
 import com.ziqni.admin.bus.ZiqniEventBus;
 import com.ziqni.admin.sdk.ApiException;
@@ -11,35 +11,28 @@ import org.springframework.messaging.simp.stomp.StompHeaders;
 
 import java.util.List;
 
-public class ZiqniSystemCallbackHandler {
+public class ZiqniSystemCallbackWatcher {
 
-    private static final Logger logger = LoggerFactory.getLogger(ZiqniSystemCallbackHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(ZiqniSystemCallbackWatcher.class);
 
     private final EntityChangesApiWs entityChangesApi;
     private final ZiqniEventBus ziqniEventBus;
 
 
-    public ZiqniSystemCallbackHandler(ZiqniEventBus ziqniEventBus, ZiqniAdminApiFactory ziqniAdminApiFactory) {
+    public ZiqniSystemCallbackWatcher(ZiqniAdminApiFactory ziqniAdminApiFactory) {
+        this(new ZiqniEventBus(),ziqniAdminApiFactory);
+    }
+    public ZiqniSystemCallbackWatcher(ZiqniEventBus ziqniEventBus, ZiqniAdminApiFactory ziqniAdminApiFactory) {
         this.ziqniEventBus = ziqniEventBus;
         this.entityChangesApi = ziqniAdminApiFactory.getEntityChangesApi();
     }
 
     public void load(){
-
         this.entityChangesApi.entityChangedHandler(this::onEntityChanged, this::onEntityChangedException);
         this.entityChangesApi.entityStateChangedHandler(this::onEntityStateChanged, this::onEntityStateChangedException);
-
-        subscribeToEntityChanges(Transformer.class);
-        subscribeToEntityChanges(Connection.class);
-
-        subscribeToEntityChanges(Member.class);
-        subscribeToEntityChanges(Reward.class);
-        subscribeToEntityChanges(Achievement.class);
-        subscribeToEntityChanges(Award.class);
-        subscribeToEntityChanges(Product.class);
     }
 
-    private void subscribeToEntityChanges(Class<?> clazz){
+    public void subscribeToEntityChanges(Class<?> clazz){
         this.entityChangesApi.manageEntityChangeSubscription(new EntityChangeSubscriptionRequest()
                 .entityType(clazz.getSimpleName())
                 .action(EntityChangeSubscriptionRequest.ActionEnum.SUBSCRIBE)
