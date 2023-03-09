@@ -4,19 +4,26 @@ import com.github.benmanes.caffeine.cache.AsyncCacheLoader;
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalListener;
+import com.google.common.eventbus.Subscribe;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
+import com.ziqni.admin.sdk.model.EntityChanged;
+import com.ziqni.admin.sdk.model.EntityStateChanged;
+import com.ziqni.admin.sdk.model.ModelApiResponse;
 import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-public abstract class Store<TKey,T> implements AsyncCacheLoader<@NonNull TKey, @NonNull T>, RemovalListener<@NonNull TKey, @NonNull T> {
+public abstract class Store<T> implements AsyncCacheLoader<@NonNull String, @NonNull T>, RemovalListener<@NonNull String, @NonNull T> {
 
+    public final static long DEFAULT_CACHE_EXPIRE_MINUTES_AFTER_ACCESS = 5L;
+    public final static long DEFAULT_CACHE_MAXIMUM_SIZE = 10_000L;
     private final ZiqniAdminApiFactory ziqniAdminApiFactory;
     private final ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher;
 
-    public final AsyncLoadingCache<@NonNull TKey, @NonNull T> cache;
+    protected final AsyncLoadingCache<@NonNull String, @NonNull T> cache;
 
     protected Store(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher, long expireMinutesAfterAccess, long maximumCacheSize) {
         this.ziqniAdminApiFactory = ziqniAdminApiFactory;
@@ -28,10 +35,6 @@ public abstract class Store<TKey,T> implements AsyncCacheLoader<@NonNull TKey, @
                 .evictionListener(this)
                 .executor(ZiqniExecutors.GlobalZiqniCachesExecutor)
                 .buildAsync(this);
-    }
-
-    protected Store(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
-        this(ziqniAdminApiFactory,ziqniSystemCallbackWatcher,15, 10_000);
     }
 
     public void init(){
@@ -46,5 +49,25 @@ public abstract class Store<TKey,T> implements AsyncCacheLoader<@NonNull TKey, @
 
     final public String getSimpleTypeClassName(){
         return getTypeClass().getSimpleName();
+    }
+
+    public ModelApiResponse handleCompletableFutureModelApiResponse(ModelApiResponse in){
+        return in;
+    }
+
+    @Subscribe
+    public void onEntityChanged(EntityChanged entityChanged){
+        if(getSimpleTypeClassName().equals(entityChanged.getEntityType()) && Objects.nonNull(entityChanged.getEntityRefId())) {
+//            final var exists = this.cache.getIfPresent(entityChanged.getEntityRefId());
+//            if(Objects.nonNull(exists)){
+//                asyncReload()
+//            }
+        }
+    }
+
+    @Subscribe
+    public void onEntityStateChanged(EntityStateChanged entityStateChanged){
+        if(getSimpleTypeClassName().equals(entityStateChanged.getEntityType())) {
+        }
     }
 }

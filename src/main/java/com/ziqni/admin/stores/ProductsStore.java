@@ -3,6 +3,7 @@ package com.ziqni.admin.stores;
 import com.github.benmanes.caffeine.cache.*;
 import com.ziqni.admin.collections.AsyncConcurrentHashMap;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
+import com.ziqni.admin.exceptions.TooManyRecordsException;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.api.ProductsApiWs;
 import com.ziqni.admin.sdk.model.*;
@@ -18,22 +19,15 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class ProductsStore extends Store<@NonNull String, @NonNull Product> {
+public class ProductsStore extends Store<@NonNull Product> {
 
 	private static final Logger logger = LoggerFactory.getLogger(ProductsStore.class);
 	private  final ProductsApiWs api;
 	private static final AsyncConcurrentHashMap<String, String> refIdCache = new AsyncConcurrentHashMap<>();
-	public final AsyncLoadingCache<@NonNull String, @NonNull Product> cache;
+
 	public ProductsStore(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
-		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
+		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher, DEFAULT_CACHE_EXPIRE_MINUTES_AFTER_ACCESS, DEFAULT_CACHE_MAXIMUM_SIZE);
 		api = ziqniAdminApiFactory.getProductsApi();
-		cache = Caffeine
-				.newBuilder()
-				.expireAfterAccess(5, TimeUnit.MINUTES)
-				.maximumSize(10_000)
-				.evictionListener(this)
-				.executor(ZiqniExecutors.GlobalZiqniCachesExecutor)
-				.buildAsync(this);
 	}
 
 	@Override
@@ -230,29 +224,38 @@ public class ProductsStore extends Store<@NonNull String, @NonNull Product> {
 	 */
 	@Override
 	public CompletableFuture<? extends Map<? extends String, ? extends Product>> asyncLoadAll(Set<? extends String> keys, Executor executor) throws Exception {
-			return api.getProducts(new ArrayList<>(keys), 1, 0)
-					.orTimeout(5, TimeUnit.SECONDS)
-					.thenApply(response -> {
-						Optional.ofNullable(response.getErrors()).ifPresent(e -> {
-							if(!e.isEmpty())
-								logger.error(e.toString());
-						});
+		TooManyRecordsException.Validate(20,0, keys.size());
 
-						if(response.getResults() != null) {
-							response.getResults().forEach(item ->
-									refIdCache.put(item.getProductRefId(), item.getId())
-							);
+		final var query = new QueryRequest()
+				.addShouldItem(new QueryMultiple().queryField(Product.JSON_PROPERTY_PRODUCT_REF_ID).queryValues(new ArrayList<>(keys)))
+				.shouldMatch(1)
+				.skip(0)
+				.limit(keys.size()
+				);
 
-							return response.getResults().stream().collect(Collectors.toMap(Product::getId,x->x));
-						}
-						else
-							return null;
-
-					})
-					.exceptionally(throwable -> {
-						logger.error("Exception occurred while attempting to get product", throwable);
-						return null;
+		return api.getProductsByQuery(query)
+				.orTimeout(5, TimeUnit.SECONDS)
+				.thenApply(response -> {
+					Optional.ofNullable(response.getErrors()).ifPresent(e -> {
+						if(!e.isEmpty())
+							logger.error(e.toString());
 					});
+
+					if(response.getResults() != null) {
+						response.getResults().forEach(item ->
+								refIdCache.put(item.getProductRefId(), item.getId())
+						);
+
+						return response.getResults().stream().collect(Collectors.toMap(Product::getId,x->x));
+					}
+					else
+						return null;
+
+				})
+				.exceptionally(throwable -> {
+					logger.error("Exception occurred while attempting to get product", throwable);
+					return null;
+				});
 	}
 
 	/**

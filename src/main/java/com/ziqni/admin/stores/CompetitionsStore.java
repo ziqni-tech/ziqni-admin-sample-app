@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
+import com.ziqni.admin.exceptions.TooManyRecordsException;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.model.Competition;
 import com.ziqni.admin.sdk.model.Competition;
@@ -22,14 +23,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class CompetitionsStore extends Store<@NonNull String, @NonNull Competition> {
+public class CompetitionsStore extends Store<@NonNull Competition> {
 
 	private static final Logger logger = LoggerFactory.getLogger(CompetitionsStore.class);
 
 
 
 	public CompetitionsStore(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
-		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
+		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher, DEFAULT_CACHE_EXPIRE_MINUTES_AFTER_ACCESS, DEFAULT_CACHE_MAXIMUM_SIZE);
 	}
 
 	@Override
@@ -49,6 +50,8 @@ public class CompetitionsStore extends Store<@NonNull String, @NonNull Competiti
 
 	@Override
 	public CompletableFuture<? extends Map<? extends @NonNull String, ? extends @NonNull Competition>> asyncLoadAll(Set<? extends @NonNull String> keys, Executor executor) throws Exception {
+		TooManyRecordsException.Validate(20,0, keys.size());
+
 		return getZiqniAdminApiFactory().getCompetitionsApi().getCompetitions(new ArrayList<>(keys), 1, 0)
 				.orTimeout(5, TimeUnit.SECONDS)
 				.thenApply(response -> {

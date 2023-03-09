@@ -1,7 +1,6 @@
 package com.ziqni.admin;
 
 import com.google.common.eventbus.Subscribe;
-import com.ziqni.admin.bus.ZiqniEventBus;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
 import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
@@ -17,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import java.time.OffsetDateTime;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 public class ZiqniAdmin {
 
@@ -28,15 +29,34 @@ public class ZiqniAdmin {
     private final ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher;
     private final Stores ziqniStores;
 
-    public ZiqniAdmin(ZiqniAdminApiFactory ziqniAdminApiFactory, AdminApiClientConfiguration configuration) {
+    public ZiqniAdmin(AdminApiClientConfiguration configuration) {
         this.configuration = configuration;
-        this.ziqniAdminApiFactory = ziqniAdminApiFactory;
+        this.ziqniAdminApiFactory = new ZiqniAdminApiFactory(configuration);
         this.ziqniSystemCallbackWatcher = new ZiqniSystemCallbackWatcher(ziqniAdminApiFactory);
         this.ziqniStores = new Stores(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
     }
 
-    public void Ignition(String[] args) throws Exception {
-        logger.info("*** Ignition sequence started ***");
+    public ZiqniAdmin launch(Consumer<ZiqniAdmin> onLaunched) throws Exception {
+        logger.info("*** Ignition sequence started, Let's light up this candle! ***");
+        this.ziqniAdminApiFactory.initialise();
+
+        if(configuration.isWebsocket()) {
+            while (ziqniAdminApiFactory.getStreamingClient() == null) {
+                Thread.sleep(500);
+                logger.info("+++ Initializing the streaming client");
+            }
+
+            final AtomicInteger counter = new AtomicInteger(0);
+            final var started = ziqniAdminApiFactory.getStreamingClient().start();
+            while (!ziqniAdminApiFactory.getStreamingClient().isConnected()) {
+                Thread.sleep(500);
+                logger.info("+++ Waiting for the streaming client to start [{}]",counter.incrementAndGet());
+            }
+            logger.info("+++ Started the streaming client");
+        }
+        else
+            throw new RuntimeException("+++ Only socket based communications is used for this platform");
+
         try {
             ziqniStores
                     .start()
@@ -46,15 +66,21 @@ public class ZiqniAdmin {
                     })
                     .thenAccept(stores -> {
                         this.ziqniSystemCallbackWatcher.load();
+                        this.ziqniStores.registerSubscribers();
                     });
 
             // implement shutdown hook
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> Application.shutdownHook(ziqniAdminApiFactory, configuration)));
+            Runtime.getRuntime().addShutdownHook( new Thread(() ->
+                    ZiqniAdmin.shutdownHook(ziqniAdminApiFactory, configuration))
+            );
 
         } catch (Exception e) {
             logger.error("Failed to launch", e);
             throw e;
         }
+
+        onLaunched.accept(this);
+        return this;
     }
 
     public Stores getZiqniStores() {
@@ -68,7 +94,7 @@ public class ZiqniAdmin {
     //////// ADMIN API CLIENT EVENTBUS ////////
     @Subscribe
     public void onWSClientConnected(WSClientConnected change) {
-        this.ziqniStores.init();
+        this.ziqniStores.registerSubscribers();
     }
 
     @Subscribe
@@ -103,5 +129,12 @@ public class ZiqniAdmin {
                 scheduleReconnectWatcher();
             }
         }, 30, TimeUnit.SECONDS);
+    }
+
+    protected static void shutdownHook(ZiqniAdminApiFactory ziqniAdminApiFactory, AdminApiClientConfiguration configuration) {
+        logger.info("+++ Shut down commenced for compute engine app.");
+        logger.info("+++ Shut down tasks completed for engine app for project [{}] and user [{}]", configuration.getAdminClientIdentityProjectUrl(), configuration.getAdminClientIdentityUser());
+        if(ziqniAdminApiFactory.getStreamingClient()!=null)
+            ziqniAdminApiFactory.getStreamingClient().stop();
     }
 }

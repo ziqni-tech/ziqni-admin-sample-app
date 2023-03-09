@@ -3,6 +3,7 @@ package com.ziqni.admin.stores;
 import com.github.benmanes.caffeine.cache.*;
 import com.ziqni.admin.concurrent.QueueJob;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
+import com.ziqni.admin.exceptions.TooManyRecordsException;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.model.*;
 import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
@@ -17,7 +18,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class UnitsOfMeasureStore extends Store<@NonNull String, @NonNull UnitOfMeasure> {
+public class UnitsOfMeasureStore extends Store<@NonNull UnitOfMeasure> {
 
 	private static final Logger logger = LoggerFactory.getLogger(UnitsOfMeasureStore.class);
 
@@ -30,12 +31,7 @@ public class UnitsOfMeasureStore extends Store<@NonNull String, @NonNull UnitOfM
 			.buildAsync(this);
 
 	public UnitsOfMeasureStore(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
-		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
-	}
-
-	@Override
-	public Class<@NonNull UnitOfMeasure> getTypeClass() {
-		return UnitOfMeasure.class;
+		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher, DEFAULT_CACHE_EXPIRE_MINUTES_AFTER_ACCESS, DEFAULT_CACHE_MAXIMUM_SIZE);
 	}
 
 	/**
@@ -74,49 +70,54 @@ public class UnitsOfMeasureStore extends Store<@NonNull String, @NonNull UnitOfM
 	/**
 	 * Create
 	 **/
-//	public CompletableFuture<Optional<Result>> create(final String key, Option<String> name, Option<String> isoCode, Double multiplier, UnitOfMeasureType unitOfMeasureType) {
-//		return QueueJob.Submit(
-//				ZiqniExecutors.StoresSingleThreadedExecutor,
-//				() -> {
-//					var toCreate=  new CreateUnitOfMeasureRequest()
-//							.key(key)
-//							.name(name.getOrElse(() -> key))
-//							.description("")
-//							.multiplier(multiplier)
-//							.unitOfMeasureType(unitOfMeasureType);
-//
-//					return getZiqniAdminApiFactory().getUnitsOfMeasureApi().createUnitsOfMeasure(List.of(toCreate))
-//							.orTimeout(5, TimeUnit.SECONDS)
-//							.thenApply(modelApiResponse -> {
-//
-//								Optional.ofNullable(modelApiResponse.getErrors()).ifPresent(e -> {
-//									if (!e.isEmpty())
-//										logger.error(e.toString());
-//								});
-//
-//								return Optional.ofNullable(modelApiResponse.getResults()).flatMap(results -> results
-//										.stream()
-//										.filter(x -> x.getExternalReference().equals(key))
-//										.findFirst().map(result -> {
-//											put(new UnitOfMeasure()
-//													.id(result.getId())
-//													.key(result.getExternalReference())
-//													.name(name.getOrElse(() -> key))
-//													.description("")
-//													.multiplier(multiplier)
-//													.unitOfMeasureType(unitOfMeasureType)
-//											);
-//											return result;
-//										})
-//								);
-//							});
-//				});
-//	}
+	public CompletableFuture<Optional<Result>> create(@NonNull final String key, String name, String isoCode, Double multiplier, UnitOfMeasureType unitOfMeasureType) {
+		return QueueJob.Submit(
+				ZiqniExecutors.StoresSingleThreadedExecutor,
+				() -> {
+					var toCreate=  new CreateUnitOfMeasureRequest()
+							.key(key)
+							.name(Objects.nonNull(name)?name:key)
+							.description("")
+							.multiplier(multiplier)
+							.unitOfMeasureType(unitOfMeasureType);
+
+					return getZiqniAdminApiFactory().getUnitsOfMeasureApi().createUnitsOfMeasure(List.of(toCreate))
+							.orTimeout(5, TimeUnit.SECONDS)
+							.thenApply(modelApiResponse -> {
+
+								Optional.ofNullable(modelApiResponse.getErrors()).ifPresent(e -> {
+									if (!e.isEmpty())
+										logger.error(e.toString());
+								});
+
+								return Optional.ofNullable(modelApiResponse.getResults()).flatMap(results -> results
+										.stream()
+										.filter(x -> x.getExternalReference().equals(key))
+										.findFirst().map(result -> {
+											put(new UnitOfMeasure()
+													.id(result.getId())
+													.key(result.getExternalReference())
+													.name(Objects.nonNull(name)?name:key)
+													.description("")
+													.multiplier(multiplier)
+													.unitOfMeasureType(unitOfMeasureType)
+											);
+											return result;
+										})
+								);
+							});
+				});
+	}
 
 	public void put(UnitOfMeasure unitOfMeasure){
 		final var fut = new CompletableFuture<UnitOfMeasure>();
 		fut.complete(unitOfMeasure);
 		cache.put(unitOfMeasure.getKey(), fut);
+	}
+
+	@Override
+	public Class<@NonNull UnitOfMeasure> getTypeClass() {
+		return UnitOfMeasure.class;
 	}
 
 	@Override
@@ -126,12 +127,16 @@ public class UnitsOfMeasureStore extends Store<@NonNull String, @NonNull UnitOfM
 
 	@Override
 	public CompletableFuture<? extends Map<? extends String, ? extends UnitOfMeasure>> asyncLoadAll(Set<? extends String> keys, Executor executor) throws Exception {
-		return getZiqniAdminApiFactory().getUnitsOfMeasureApi().getUnitsOfMeasureByQuery(
-						new QueryRequest()
-								.skip(0)
-								.limit(keys.size())
-								.addShouldItem(new QueryMultiple().queryField(ActionType.JSON_PROPERTY_KEY).queryValues(new ArrayList<>(keys)))
-								.shouldMatch(1))
+		TooManyRecordsException.Validate(20,0, keys.size());
+
+		final var query = new QueryRequest()
+				.addShouldItem(new QueryMultiple().queryField(ActionType.JSON_PROPERTY_KEY).queryValues(new ArrayList<>(keys)))
+				.shouldMatch(1)
+				.skip(0)
+				.limit(keys.size()
+				);
+
+		return getZiqniAdminApiFactory().getUnitsOfMeasureApi().getUnitsOfMeasureByQuery(query)
 				.orTimeout(5, TimeUnit.SECONDS)
 				.thenApply(unitOfMeasureResponse -> {
 

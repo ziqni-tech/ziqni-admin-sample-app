@@ -2,6 +2,7 @@ package com.ziqni.admin.stores;
 
 import com.github.benmanes.caffeine.cache.*;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
+import com.ziqni.admin.exceptions.TooManyRecordsException;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.model.Reward;
 import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
@@ -19,7 +20,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class RewardStore extends Store<@NonNull String, @NonNull Reward> {
+public class RewardStore extends Store<@NonNull Reward> {
 
     private static final Logger logger = LoggerFactory.getLogger(RewardStore.class);
 
@@ -32,7 +33,7 @@ public class RewardStore extends Store<@NonNull String, @NonNull Reward> {
             .buildAsync(this);
 
     public RewardStore(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
-        super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
+        super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher, DEFAULT_CACHE_EXPIRE_MINUTES_AFTER_ACCESS, DEFAULT_CACHE_MAXIMUM_SIZE);
     }
 
     @Override
@@ -51,6 +52,8 @@ public class RewardStore extends Store<@NonNull String, @NonNull Reward> {
 
     @Override
     public CompletableFuture<? extends Map<? extends @NonNull String, ? extends @NonNull Reward>> asyncLoadAll(Set<? extends @NonNull String> keys, Executor executor) throws Exception {
+        TooManyRecordsException.Validate(20,0, keys.size());
+
         return getZiqniAdminApiFactory().getRewardsApi().getRewards(new ArrayList<>(keys), 1, 0)
                 .orTimeout(5, TimeUnit.SECONDS)
                 .thenApply(response -> {

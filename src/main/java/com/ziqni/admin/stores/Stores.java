@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Stores {
 
+
     private final ZiqniAdminApiFactory ziqniAdminApiFactory;
     private final ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher;
 
@@ -25,7 +26,7 @@ public class Stores {
     private final AwardStore awardStore;
     private final UnitsOfMeasureStore unitsOfMeasureStore;
 
-    private final Set<? extends Store<?,?>> subscribedToCallbacks;
+    private final Set<? extends Store<?>> subscribedToCallbacks;
 
     public Stores(@NonNull ZiqniAdminApiFactory ziqniAdminApiFactory, @NonNull ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
         this.ziqniAdminApiFactory = ziqniAdminApiFactory;
@@ -68,7 +69,7 @@ public class Stores {
                 .thenApply(unused -> this);
     }
 
-    public void init() {
+    public void registerSubscribers() {
         this.subscribedToCallbacks.forEach(store ->
                 this.ziqniSystemCallbackWatcher.subscribeToEntityChanges(store.getTypeClass())
         );

@@ -3,6 +3,7 @@ package com.ziqni.admin.stores;
 import com.github.benmanes.caffeine.cache.*;
 import com.ziqni.admin.collections.Tuple;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
+import com.ziqni.admin.exceptions.TooManyRecordsException;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.model.*;
 import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
@@ -17,7 +18,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class ActionTypesStore extends Store<@NonNull String, ActionType> {
+public class ActionTypesStore extends Store<ActionType> {
 
 	private static final Logger logger = LoggerFactory.getLogger(ActionTypesStore.class);
 
@@ -29,7 +30,7 @@ public class ActionTypesStore extends Store<@NonNull String, ActionType> {
 			.evictionListener(this).buildAsync(this);
 
 	public ActionTypesStore(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
-		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
+		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher, DEFAULT_CACHE_EXPIRE_MINUTES_AFTER_ACCESS, DEFAULT_CACHE_MAXIMUM_SIZE);
 	}
 
 
@@ -202,12 +203,16 @@ public class ActionTypesStore extends Store<@NonNull String, ActionType> {
 	 */
 	@Override
 	public CompletableFuture<? extends Map<? extends @NonNull String, ? extends ActionType>> asyncLoadAll(Set<? extends @NonNull String> keys, Executor executor) throws Exception {
-		return getZiqniAdminApiFactory().getActionTypesApi().getActionTypesByQuery(
-				new QueryRequest()
-						.skip(0)
-						.limit(keys.size())
-						.addShouldItem(new QueryMultiple().queryField(ActionType.JSON_PROPERTY_KEY).queryValues(new ArrayList<>(keys)))
-						.shouldMatch(1))
+		TooManyRecordsException.Validate(20,0, keys.size());
+
+		final var query = new QueryRequest()
+				.addShouldItem(new QueryMultiple().queryField(ActionType.JSON_PROPERTY_KEY).queryValues(new ArrayList<>(keys)))
+				.shouldMatch(1)
+				.skip(0)
+				.limit(keys.size()
+				);
+
+		return getZiqniAdminApiFactory().getActionTypesApi().getActionTypesByQuery(query)
 				.orTimeout(5, TimeUnit.SECONDS)
 				.thenApply(actionTypeResponse -> {
 
