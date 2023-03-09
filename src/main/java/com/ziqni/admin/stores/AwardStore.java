@@ -3,7 +3,7 @@ package com.ziqni.admin.stores;
 import com.github.benmanes.caffeine.cache.*;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
-import com.ziqni.admin.sdk.model.Reward;
+import com.ziqni.admin.sdk.model.Award;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -18,34 +18,34 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class RewardStore extends Store implements AsyncCacheLoader<@NonNull String, @NonNull Reward>, RemovalListener<@NonNull String, @NonNull Reward> {
+public class AwardStore extends Store implements AsyncCacheLoader<@NonNull String, @NonNull Award>, RemovalListener<@NonNull String, @NonNull Award> {
 
-    private static final Logger logger = LoggerFactory.getLogger(RewardStore.class);
+    private static final Logger logger = LoggerFactory.getLogger(AwardStore.class);
 
-    public final AsyncLoadingCache<@NonNull String, @NonNull Reward> cache = Caffeine
+    public final AsyncLoadingCache<@NonNull String, @NonNull Award> cache = Caffeine
             .newBuilder()
-            .maximumSize(1_000)
-            .expireAfterAccess(5, TimeUnit.MINUTES)
+            .maximumSize(10_000)
+            .expireAfterAccess(15, TimeUnit.MINUTES)
             .evictionListener(this)
             .executor(ZiqniExecutors.GlobalZiqniCachesExecutor)
             .buildAsync(this);
 
-    public RewardStore(ZiqniAdminApiFactory ziqniAdminApiFactory) {
+    public AwardStore(ZiqniAdminApiFactory ziqniAdminApiFactory) {
         super(ziqniAdminApiFactory);
     }
 
-    public CompletableFuture<Optional<Reward>> getReward(String id) {
+    public CompletableFuture<Optional<Award>> getAward(String id){
         return cache.get(id).thenApply(Optional::ofNullable);
     }
 
     @Override
-    public CompletableFuture<? extends @NonNull Reward> asyncLoad(@NonNull String key, Executor executor) throws Exception {
+    public CompletableFuture<? extends @NonNull Award> asyncLoad(@NonNull String key, Executor executor) throws Exception {
         return asyncLoadAll(Set.of(key), executor).thenApply(x->x.get(key));
     }
 
     @Override
-    public CompletableFuture<? extends Map<? extends @NonNull String, ? extends @NonNull Reward>> asyncLoadAll(Set<? extends @NonNull String> keys, Executor executor) throws Exception {
-        return getZiqniAdminApiFactory().getRewardsApi().getRewards(new ArrayList<>(keys), 1, 0)
+    public CompletableFuture<? extends Map<? extends @NonNull String, ? extends @NonNull Award>> asyncLoadAll(Set<? extends @NonNull String> keys, Executor executor) throws Exception {
+        return getZiqniAdminApiFactory().getAwardsApi().getAwards(new ArrayList<>(keys), 1, 0)
                 .orTimeout(5, TimeUnit.SECONDS)
                 .thenApply(response -> {
                     Optional.ofNullable(response.getErrors()).ifPresent(e -> {
@@ -54,7 +54,7 @@ public class RewardStore extends Store implements AsyncCacheLoader<@NonNull Stri
                     });
 
                     if(response.getResults() != null) {
-                        return response.getResults().stream().collect(Collectors.toMap(Reward::getId, x->x));
+                        return response.getResults().stream().collect(Collectors.toMap(Award::getId, x->x));
                     }
                     else
                         return null;
@@ -67,7 +67,7 @@ public class RewardStore extends Store implements AsyncCacheLoader<@NonNull Stri
     }
 
     @Override
-    public void onRemoval(@Nullable @NonNull String key, @Nullable @NonNull Reward value, RemovalCause cause) {
+    public void onRemoval(@Nullable String key, @Nullable Award value, RemovalCause cause) {
 
     }
 }

@@ -72,7 +72,7 @@ public class ProductsStore extends Store implements AsyncCacheLoader<@NonNull St
 		return cache.get(productId).thenApply(Product::getProductRefId);
 	}
 
-	public CompletableFuture<Optional<Product>> findBasicProductModelById(String productId) {
+	public CompletableFuture<Optional<Product>> findProductModelById(String productId) {
 		return cache.get(productId).thenApply(Optional::ofNullable);
 	}
 

@@ -36,11 +36,6 @@ public class ContestsStore extends Store implements AsyncCacheLoader<@NonNull St
 
 
 	/** Get methods **/
-	public CompletableFuture<Optional<Contest>> getBasicContestModel(String id) {
-		return getContest(id);
-	}
-
-	/** Get methods **/
 	public CompletableFuture<Optional<Contest>> getContest(String id) {
 		return cache.get(id).thenApply(Optional::ofNullable);
 	}

@@ -10,7 +10,6 @@ public class Stores {
 
     public Stores(@NonNull ZiqniAdminApiFactory ziqniAdminApiFactory) {
         this.ziqniAdminApiFactory = ziqniAdminApiFactory;
-
         this.memberStore = new MemberStore(this.ziqniAdminApiFactory);
     }
 

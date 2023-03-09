@@ -71,7 +71,7 @@ public class EventsStore extends Store implements CacheLoader<@NonNull String, E
                 ZiqniExecutors.EventStoreSingleThreadedExecutor,
                 () -> {
                     Optional.ofNullable(event.getBatchId()).map(v1 ->
-                            Objects.requireNonNull(cache.get(v1)).addBasicEvent(event)
+                            Objects.requireNonNull(cache.get(v1)).addEvent(event)
                     );
                     return pushEvent(event);
                 }
@@ -105,7 +105,7 @@ public class EventsStore extends Store implements CacheLoader<@NonNull String, E
     public static class EventTransaction {
         private final List<CreateEventRequest> buffer = new ArrayList<>();
 
-        public boolean addBasicEvent(CreateEventRequest e) {
+        public boolean addEvent(CreateEventRequest e) {
             return buffer.add(e);
         }
 

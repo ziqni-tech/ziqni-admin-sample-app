@@ -39,10 +39,6 @@ public class UnitsOfMeasureStore extends Store implements AsyncCacheLoader<@NonN
 		return getUnitOfMeasure(uom).thenApply(Optional::isPresent);
 	}
 
-	public CompletableFuture<Optional<UnitOfMeasure>> getBasicUnitOfMeasure(String uom) {
-		return getUnitOfMeasure(uom);
-	}
-
 	public CompletableFuture<Optional<UnitOfMeasure>> getUnitOfMeasure(String uom) {
 		return cache.get(uom).thenApply(Optional::ofNullable);
 	}
