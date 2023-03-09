@@ -1,24 +1,24 @@
-package com.ziqni.admin.cache;
+package com.ziqni.admin.stores;
 
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-public class Caches {
+public class Stores {
 
     private final ZiqniAdminApiFactory ziqniAdminApiFactory;
-    private final MemberCache memberCache;
+    private final MemberStore memberStore;
 
-    public Caches(@NonNull ZiqniAdminApiFactory ziqniAdminApiFactory) {
+    public Stores(@NonNull ZiqniAdminApiFactory ziqniAdminApiFactory) {
         this.ziqniAdminApiFactory = ziqniAdminApiFactory;
 
-        this.memberCache = new MemberCache(this.ziqniAdminApiFactory);
+        this.memberStore = new MemberStore(this.ziqniAdminApiFactory);
     }
 
     public ZiqniAdminApiFactory getZiqniAdminApiFactory() {
         return ziqniAdminApiFactory;
     }
 
-    public MemberCache getMemberCache() {
-        return memberCache;
+    public MemberStore getMemberCache() {
+        return memberStore;
     }
 }

@@ -1,0 +1,284 @@
+package com.ziqni.admin.stores;
+
+import com.github.benmanes.caffeine.cache.*;
+import com.ziqni.admin.collections.Tuple;
+import com.ziqni.admin.concurrent.ZiqniExecutors;
+import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
+import com.ziqni.admin.sdk.model.*;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+public class ActionTypesStore extends Store implements AsyncCacheLoader<@NonNull String, ActionTypesStore.ActionTypeEntry>, RemovalListener<@NonNull String, ActionTypesStore.ActionTypeEntry> {
+
+	private static final Logger logger = LoggerFactory.getLogger(ActionTypesStore.class);
+
+	public final AsyncLoadingCache<String, ActionTypeEntry> cache = Caffeine
+			.newBuilder()
+			.maximumSize(10_000)
+			.expireAfterAccess(1, TimeUnit.DAYS)
+			.executor(ZiqniExecutors.GlobalZiqniCachesExecutor)
+			.evictionListener(this).buildAsync(this);
+
+	public ActionTypesStore(ZiqniAdminApiFactory ziqniAdminApiFactory) {
+		super(ziqniAdminApiFactory);
+	}
+
+	/**
+	 * Get methods
+	 **/
+	public CompletableFuture<Boolean> actionTypeExists(String action) {
+		return getAction(action).thenApply(Objects::nonNull);
+	}
+
+	public CompletableFuture<ActionTypeEntry> getAction(String action) {
+		return cache.get(action);
+	}
+
+	public CompletableFuture<Integer> start(){
+		return loadActions(0).thenApply(x->x.getMeta().getTotalRecords());
+	}
+
+	private CompletableFuture<ActionTypeResponse> loadActions(Integer skip) {
+		var request = new QueryRequest().skip(skip).limit(100);
+		return getZiqniAdminApiFactory().getActionTypesApi().getActionTypesByQuery(request)
+				.thenCompose(actionTypeResponse -> {
+					if(actionTypeResponse.getResults() != null && actionTypeResponse.getResults().size() > 0 &&  actionTypeResponse.getMeta().getTotalRecords() > actionTypeResponse.getResults().size())
+						return loadActions(skip+20);
+					else {
+						final var out = new CompletableFuture<ActionTypeResponse>();
+						out.complete(actionTypeResponse);
+						return out;
+					}
+				});
+	}
+
+	/**
+	 * Create
+	 **/
+//	public CompletableFuture<Optional<Result>> create(final String action, Option<String> name, Option<scala.collection.Map<String, String>> metaData, String unitOfMeasureKey) {
+//		return QueueJob.Submit(ZiqniExecutors.StoresSingleThreadedExecutor, () -> {
+//			var meta = setMetadata(metaData);
+//			var toCreate=  new CreateActionTypeRequest()
+//					.key(action)
+//					.name(name.getOrElse(() -> action))
+//					.metadata(meta)
+//					.unitOfMeasure(unitOfMeasureKey);
+//
+//			return getZiqniAdminApiFactory().getActionTypesApi().createActionTypes(List.of(toCreate))
+//					.orTimeout(5, TimeUnit.SECONDS)
+//					.thenApply(modelApiResponse -> {
+//
+//						Optional.ofNullable(modelApiResponse.getErrors()).ifPresent(e -> {
+//							if (!e.isEmpty())
+//								logger.debug(e.toString());
+//						});
+//
+//						return Optional.ofNullable(modelApiResponse.getResults()).flatMap(results -> results
+//								.stream()
+//								.filter(x -> x.getExternalReference().equals(action))
+//								.findFirst().map(result -> {
+//									put(new ActionTypeEntry( action, result.getId(), toCreate.getName() ));
+//									return result;
+//								})
+//						);
+//					});
+//		});
+//	}
+
+	public void put(ActionTypeEntry actionType){
+		final var fut = new CompletableFuture<ActionTypeEntry>();
+		fut.complete(actionType);
+		cache.put(actionType.key, fut);
+	}
+
+	/**
+	 * Update
+	 **/
+//	public CompletableFuture<ModelApiResponse> update(String action, Option<String> name, Option<scala.collection.Map<String, String>> metaData, Option<String> unitOfMeasureType) {
+//
+//		final CompletableFuture<Optional<UpdateAction>> search = cache.get(action)
+//				.thenApply(Optional::ofNullable)
+//				.thenApply(actionType -> actionType.map( found -> {
+//
+//					var meta = setMetadata(metaData);
+//					return new UpdateAction(found, new UpdateActionTypeRequest()
+//							.id(found.id)
+//							.name(name.getOrElse(() -> action))
+//							.unitOfMeasure(unitOfMeasureType.map(UnitOfMeasureType::valueOf).getOrElse(UnitOfMeasureType.OTHER::getValue))
+//							.metadata(meta));
+//
+//				})).handle((updateAction, throwable) -> {
+//					if(throwable != null){
+//						logger.error("Exception occurred while attempting to update action type", throwable);
+//						return Optional.empty();
+//					}
+//					else {
+//						return updateAction;
+//					}
+//				});
+//
+//		return search.thenCompose(updateAction -> {
+//			if(updateAction.isPresent()){
+//				return getZiqniAdminApiFactory().getActionTypesApi().updateActionTypes(List.of(updateAction.get().two)).orTimeout(5, TimeUnit.SECONDS)
+//						.thenApply(modelApiResponse -> {
+//
+//							var r1 = Optional.ofNullable(modelApiResponse.getResults()).flatMap(results -> {
+//								final var out = results.stream()
+//										.filter(x -> x.getExternalReference() != null && x.getExternalReference().equals(action))
+//										.map(result -> {
+//											put(updateAction.get().one
+//													.setName(updateAction.get().two.getName())
+//													.setId(result.getId())
+//											);
+//											return result;
+//										}).findFirst();
+//								return out;
+//							});
+//
+//							return modelApiResponse;
+//						});
+//			}
+//			else {
+//				final var oops = new CompletableFuture<ModelApiResponse>();
+//				oops.completeExceptionally(new Throwable("Not found"));
+//				return oops;
+//			}
+//		});
+//	}
+
+	/**
+	 * Asynchronously computes or retrieves the value corresponding to {@code key}.
+	 *
+	 * @param key      the non-null key whose value should be loaded
+	 * @param executor the executor with which the entry is asynchronously loaded
+	 * @return the future value associated with {@code key}
+	 * @throws Exception            or Error, in which case the mapping is unchanged
+	 * @throws InterruptedException if this method is interrupted. {@code InterruptedException} is
+	 *                              treated like any other {@code Exception} in all respects except that, when it is
+	 *                              caught, the thread's interrupt status is set
+	 */
+	@Override
+	public CompletableFuture<? extends ActionTypeEntry> asyncLoad(@NonNull String key, Executor executor) throws Exception {
+		return asyncLoadAll(Set.of(key),executor).thenApply(map -> map.get(key));
+	}
+
+	/**
+	 * Asynchronously computes or retrieves the values corresponding to {@code keys}. This method is
+	 * called by {@link AsyncLoadingCache#getAll}.
+	 * <p>
+	 * If the returned map doesn't contain all requested {@code keys} then the entries it does contain
+	 * will be cached and {@code getAll} will return the partial results. If the returned map contains
+	 * extra keys not present in {@code keys} then all returned entries will be cached, but only the
+	 * entries for {@code keys} will be returned from {@code getAll}.
+	 * <p>
+	 * This method should be overridden when bulk retrieval is significantly more efficient than many
+	 * individual lookups. Note that {@link AsyncLoadingCache#getAll} will defer to individual calls
+	 * to {@link AsyncLoadingCache#get} if this method is not overridden.
+	 *
+	 * @param keys     the unique, non-null keys whose values should be loaded
+	 * @param executor the executor with which the entries are asynchronously loaded
+	 * @return a future containing the map from each key in {@code keys} to the value associated with
+	 * that key; <b>may not contain null values</b>
+	 * @throws Exception            or Error, in which case the mappings are unchanged
+	 * @throws InterruptedException if this method is interrupted. {@code InterruptedException} is
+	 *                              treated like any other {@code Exception} in all respects except that, when it is
+	 *                              caught, the thread's interrupt status is set
+	 */
+	@Override
+	public CompletableFuture<? extends Map<? extends @NonNull String, ? extends ActionTypeEntry>> asyncLoadAll(Set<? extends @NonNull String> keys, Executor executor) throws Exception {
+		return getZiqniAdminApiFactory().getActionTypesApi().getActionTypesByQuery(
+				new QueryRequest()
+						.skip(0)
+						.limit(keys.size())
+						.addShouldItem(new QueryMultiple().queryField(ActionType.JSON_PROPERTY_KEY).queryValues(new ArrayList<>(keys)))
+						.shouldMatch(1))
+				.orTimeout(5, TimeUnit.SECONDS)
+				.thenApply(actionTypeResponse -> {
+
+					Optional.ofNullable(actionTypeResponse.getErrors()).ifPresent(e -> {
+						if(!e.isEmpty())
+							logger.error(e.toString());
+					});
+
+					return Optional.ofNullable(actionTypeResponse.getResults())
+							.map(a-> a.stream().collect(Collectors.toMap(ActionType::getKey, ActionTypeEntry::new)))
+							.orElse(null);
+				});
+
+	}
+
+	/**
+	 * Notifies the listener that a removal occurred at some point in the past.
+	 * <p>
+	 * This does not always signify that the key is now absent from the cache, as it may have already
+	 * been re-added.
+	 *
+	 * @param key   the key represented by this entry, or {@code null} if collected
+	 * @param value the value represented by this entry, or {@code null} if collected
+	 * @param cause the reason for which the entry was removed
+	 */
+	@Override
+	public void onRemoval(@Nullable String key, ActionTypeEntry value, RemovalCause cause) {
+
+	}
+
+	public static class ActionTypeEntry {
+		public final String key;
+		public String id;
+		public String name;
+
+		public ActionTypeEntry(String key) {
+			this.key = key;
+		}
+
+		public ActionTypeEntry(String key, String id, String name) {
+			this.key = key;
+			this.id = id;
+			this.name = name;
+		}
+
+		public ActionTypeEntry(ActionType actionType) {
+			this.key = actionType.getKey();
+			this.id = actionType.getId();
+			this.name = actionType.getName();
+		}
+
+		public ActionTypeEntry setId(String id) {
+			this.id = id;
+			return this;
+		}
+
+		public ActionTypeEntry setName(String name) {
+			this.name = name;
+			return this;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (!(o instanceof ActionTypeEntry)) return false;
+			ActionTypeEntry that = (ActionTypeEntry) o;
+			return key.equals(that.key);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(key);
+		}
+	}
+
+	private static class UpdateAction extends Tuple<ActionTypeEntry,UpdateActionTypeRequest> {
+
+		public UpdateAction(ActionTypeEntry one, UpdateActionTypeRequest two) {
+			super(one, two);
+		}
+	}
+}

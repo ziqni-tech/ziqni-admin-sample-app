@@ -1,4 +1,4 @@
-package com.ziqni.admin.cache;
+package com.ziqni.admin.stores;
 
 import com.github.benmanes.caffeine.cache.AsyncCacheLoader;
 import com.github.benmanes.caffeine.cache.RemovalCause;
@@ -20,15 +20,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class MemberCache implements AsyncCacheLoader<@NonNull String, @NonNull Member> , RemovalListener<@NonNull String, @NonNull Member> {
+public class MemberStore extends Store implements AsyncCacheLoader<@NonNull String, @NonNull Member> , RemovalListener<@NonNull String, @NonNull Member> {
 
-    private static final Logger logger = LoggerFactory.getLogger(MemberCache.class);
+    private static final Logger logger = LoggerFactory.getLogger(MemberStore.class);
     private static final AsyncConcurrentHashMap<String, String> refIdCache = new AsyncConcurrentHashMap<>();
 
-    private final ZiqniAdminApiFactory ziqniAdminApiFactory;
 
-    public MemberCache(ZiqniAdminApiFactory ziqniAdminApiFactory) {
-        this.ziqniAdminApiFactory = ziqniAdminApiFactory;
+    public MemberStore(ZiqniAdminApiFactory ziqniAdminApiFactory) {
+        super(ziqniAdminApiFactory);
     }
 
 
@@ -40,7 +39,7 @@ public class MemberCache implements AsyncCacheLoader<@NonNull String, @NonNull M
     @Override
     public CompletableFuture<? extends Map<? extends String, ? extends Member>> asyncLoadAll(Set<? extends String> keys, Executor executor) throws Exception {
 
-        return ziqniAdminApiFactory.getMembersApi().getMembers(new ArrayList<>(keys), keys.size(), 0)
+        return getZiqniAdminApiFactory().getMembersApi().getMembers(new ArrayList<>(keys), keys.size(), 0)
                 .orTimeout(5, TimeUnit.SECONDS)
                 .thenApply(response -> {
 
