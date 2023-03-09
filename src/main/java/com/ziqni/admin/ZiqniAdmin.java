@@ -7,8 +7,6 @@ import com.ziqni.admin.sdk.model.EntityStateChanged;
 import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.configuration.AdminApiClientConfiguration;
-import com.ziqni.admin.sdk.context.WSClientConnected;
-import com.ziqni.admin.sdk.context.WSClientConnecting;
 import com.ziqni.admin.sdk.context.WSClientDisconnected;
 import com.ziqni.admin.sdk.context.WSClientSevereFailure;
 import com.ziqni.admin.stores.Stores;
@@ -36,7 +34,7 @@ public class ZiqniAdmin {
         this.ziqniAdminApiFactory = new ZiqniAdminApiFactory(configuration);
         this.ziqniSystemCallbackWatcher = new ZiqniSystemCallbackWatcher(ziqniAdminApiFactory);
         this.ziqniStores = new Stores(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
-        ziqniAdminApiFactory.getZiqniAdminEventBus().register(this);
+        this.ziqniAdminApiFactory.getZiqniAdminEventBus().register(this);
     }
 
     public ZiqniAdmin launch(Consumer<ZiqniAdmin> onLaunched) throws Exception {
@@ -100,8 +98,8 @@ public class ZiqniAdmin {
      */
     public void registerToReceiveEvents(Object registerMe){
         this.ziqniAdminApiFactory.getZiqniAdminEventBus().register(registerMe);
-        this.getZiqniSystemCallbackWatcher().registerEntityChangedEventBus(registerMe);
-        this.getZiqniSystemCallbackWatcher().registerEntityStateChangedEventBus(registerMe);
+        this.ziqniSystemCallbackWatcher.registerEntityChangedEventBus(registerMe);
+        this.ziqniSystemCallbackWatcher.registerEntityStateChangedEventBus(registerMe);
     }
 
     //////// ADMIN API CLIENT EVENTBUS ////////
@@ -141,10 +139,6 @@ public class ZiqniAdmin {
         logger.info("+++ Shut down tasks completed for engine app for project [{}] and user [{}]", configuration.getAdminClientIdentityProjectUrl(), configuration.getAdminClientIdentityUser());
         if(ziqniAdminApiFactory.getStreamingClient()!=null)
             ziqniAdminApiFactory.getStreamingClient().stop();
-    }
-
-    public ZiqniSystemCallbackWatcher getZiqniSystemCallbackWatcher() {
-        return ziqniSystemCallbackWatcher;
     }
 
     @Subscribe

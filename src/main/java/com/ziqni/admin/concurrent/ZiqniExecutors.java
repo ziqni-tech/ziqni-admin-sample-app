@@ -8,8 +8,6 @@ import java.util.concurrent.*;
 public abstract class ZiqniExecutors {
 
     // MANAGEMENT BUS //
-    private static final ZiqniLinkedBlockingQueue<Runnable> ManagementBusWorkQueue = new ZiqniLinkedBlockingQueue<>("ziqni-management-bus", 1000);
-
     public static final ScheduledThreadPoolExecutor ReconnectScheduledExecutor = ZiqniExecutors.newSingleThreadScheduledExecutor("ziqni-reconnect");
 
     // COMMON SINGLE THREADED RATE REDUCER //
@@ -20,14 +18,8 @@ public abstract class ZiqniExecutors {
     public static final ZiqniLinkedBlockingQueue<Runnable> SingleThreadedEventStoreExecutorWorkQueue = new ZiqniLinkedBlockingQueue<>("ziqni-event-stores-worker", 1000);
     public static final ThreadPoolExecutor EventStoreSingleThreadedExecutor = ZiqniExecutors.newSingleThreadedExecutor(SingleThreadedEventStoreExecutorWorkQueue,"ziqni-event-stores-worker");
 
-    // RABBIT CONNECTION //
-    public static ForkJoinPool GlobalZiqniRabbitMqExecutor = newForkJoinPool(2, "ziqni-rabbit");
-
     // CACHES CONNECTION //
     public static ForkJoinPool GlobalZiqniCachesExecutor = newForkJoinPool(Runtime.getRuntime().availableProcessors(), "ziqni-caches");
-
-    // ON MESSAGE IN //
-    public static ExecutorService GlobalMessageQueueWorkExecutor = newCachedThreadPool("ziqni-message-queue-work-executor");
 
     // UTILS //
 

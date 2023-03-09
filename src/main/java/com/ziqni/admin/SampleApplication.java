@@ -1,19 +1,27 @@
 package com.ziqni.admin;
 
 import com.google.common.eventbus.Subscribe;
+import com.ziqni.admin.concurrent.ZiqniExecutors;
 import com.ziqni.admin.exceptions.GlobalExceptionHandler;
 import com.ziqni.admin.sdk.configuration.AdminApiClientConfigBuilder;
 import com.ziqni.admin.sdk.context.WSClientConnected;
 import com.ziqni.admin.sdk.context.WSClientConnecting;
+import com.ziqni.admin.sdk.context.WSClientDisconnected;
 import com.ziqni.admin.sdk.context.WSClientSevereFailure;
 import com.ziqni.admin.sdk.model.EntityChanged;
 import com.ziqni.admin.sdk.model.EntityStateChanged;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SampleApplication {
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+public class SampleApplication implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(SampleApplication.class);
+
+    private final ScheduledThreadPoolExecutor ticker;
+    private final ZiqniAdmin ziqniAdmin;
 
     public static void main( String[] args ) throws Exception {
 
@@ -24,6 +32,8 @@ public class SampleApplication {
     }
 
     public SampleApplication(ZiqniAdmin ziqniAdmin) {
+        this.ziqniAdmin = ziqniAdmin;
+
         ziqniAdmin.registerToReceiveEvents(this);
 
         ziqniAdmin.getZiqniStores().getMembersStore().subscribeToEntityChanges();
@@ -35,6 +45,8 @@ public class SampleApplication {
         ziqniAdmin.getZiqniStores().getCompetitionsStore().subscribeToEntityChanges();
         ziqniAdmin.getZiqniStores().getContestsStore().subscribeToEntityChanges();
 
+        this.ticker = ZiqniExecutors.newSingleThreadScheduledExecutor("simulate-data-feed");
+        this.ticker.schedule(this, 5, TimeUnit.SECONDS);
     }
 
     @Subscribe
@@ -48,9 +60,15 @@ public class SampleApplication {
     }
 
     @Subscribe
+    public void onWSClientDisconnected(WSClientDisconnected change){
+        logger.info("+++++ ZIQNI disconnected, {}", change);
+    }
+
+    @Subscribe
     public void onWSClientSevereFailure(WSClientSevereFailure change){
         logger.info("+++++  ZIQNI websocket client experienced a severe failure, {}", change);
     }
+
     @Subscribe
     public void onEntityChanged(EntityChanged entityChanged){
         logger.info("+++++  ZIQNI entity changed, {}", entityChanged);
@@ -59,5 +77,10 @@ public class SampleApplication {
     @Subscribe
     public void onEntityStateChanged(EntityStateChanged entityStateChanged){
         logger.info("+++++  ZIQNI entity state changed, {}", entityStateChanged);
+    }
+
+    @Override
+    public void run() {
+        this.ticker.schedule(this, 5, TimeUnit.SECONDS);
     }
 }
