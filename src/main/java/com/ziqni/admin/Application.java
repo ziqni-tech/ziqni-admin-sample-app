@@ -1,12 +1,12 @@
-package com.ziqni.admin.app;
+package com.ziqni.admin;
 
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.configuration.AdminApiClientConfigBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-public class Main {
+public class Application {
 
-    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+    private static final Logger logger = LoggerFactory.getLogger(Application.class);
 
     public static void main( String[] args ) throws Exception {
 
