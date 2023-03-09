@@ -37,7 +37,7 @@ public class ZiqniAdmin {
     }
 
     public void Ignition(String[] args) throws Exception {
-        logger.info("*** Ignition sequence started, light this candle ***");
+        logger.info("*** Ignition sequence started ***");
         try {
             ziqniStores
                     .start()
@@ -53,6 +53,14 @@ public class ZiqniAdmin {
             logger.error("Failed to launch", e);
             throw e;
         }
+    }
+
+    public Stores getZiqniStores() {
+        return ziqniStores;
+    }
+
+    public ZiqniAdminApiFactory getZiqniAdminApiFactory() {
+        return ziqniAdminApiFactory;
     }
 
     //////// ADMIN API CLIENT EVENTBUS ////////

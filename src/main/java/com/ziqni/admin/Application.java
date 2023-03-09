@@ -26,7 +26,7 @@ public class Application {
 
     public static void main( String[] args ) throws Exception {
 
-        logger.info("+++++ ZIQNI Build Version: {} +++++", "2023-02-14-00-00");
+        logger.info("+++++ ZIQNI Build Version: {} +++++", "2023-02-14-00-00. Let's light this candle!");
         var configuration = AdminApiClientConfigBuilder.build();
         var ziqniAdminApiFactory = new ZiqniAdminApiFactory(configuration);
         logger.info("Launched compute engine app for project [{}] and user [{}]", configuration.getAdminClientIdentityProjectUrl(), configuration.getAdminClientIdentityUser());
