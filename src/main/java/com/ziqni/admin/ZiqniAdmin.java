@@ -2,6 +2,8 @@ package com.ziqni.admin;
 
 import com.google.common.eventbus.Subscribe;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
+import com.ziqni.admin.sdk.model.EntityChanged;
+import com.ziqni.admin.sdk.model.EntityStateChanged;
 import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.configuration.AdminApiClientConfiguration;
@@ -34,6 +36,7 @@ public class ZiqniAdmin {
         this.ziqniAdminApiFactory = new ZiqniAdminApiFactory(configuration);
         this.ziqniSystemCallbackWatcher = new ZiqniSystemCallbackWatcher(ziqniAdminApiFactory);
         this.ziqniStores = new Stores(ziqniAdminApiFactory,ziqniSystemCallbackWatcher);
+        ziqniAdminApiFactory.getZiqniAdminEventBus().register(this);
     }
 
     public ZiqniAdmin launch(Consumer<ZiqniAdmin> onLaunched) throws Exception {
@@ -65,8 +68,7 @@ public class ZiqniAdmin {
                         return null;
                     })
                     .thenAccept(stores -> {
-                        this.ziqniSystemCallbackWatcher.load();
-                        this.ziqniStores.registerSubscribers();
+                        this.ziqniSystemCallbackWatcher.register();
                     });
 
             // implement shutdown hook
@@ -91,15 +93,18 @@ public class ZiqniAdmin {
         return ziqniAdminApiFactory;
     }
 
-    //////// ADMIN API CLIENT EVENTBUS ////////
-    @Subscribe
-    public void onWSClientConnected(WSClientConnected change) {
-        this.ziqniStores.registerSubscribers();
+    /**
+     * Register to receive events
+     * WSClientConnected, WSClientConnecting, WSClientSevereFailure
+     * EntityChanged, EntityStateChanged
+     */
+    public void registerToReceiveEvents(Object registerMe){
+        this.ziqniAdminApiFactory.getZiqniAdminEventBus().register(registerMe);
+        this.getZiqniSystemCallbackWatcher().registerEntityChangedEventBus(registerMe);
+        this.getZiqniSystemCallbackWatcher().registerEntityStateChangedEventBus(registerMe);
     }
 
-    @Subscribe
-    public void onWSClientConnecting(WSClientConnecting change) {
-    }
+    //////// ADMIN API CLIENT EVENTBUS ////////
 
     @Subscribe
     public void onWSClientDisconnected(WSClientDisconnected change){
@@ -111,7 +116,7 @@ public class ZiqniAdmin {
 
     @Subscribe
     public void onWSClientSevereFailure(WSClientSevereFailure change){
-        logger.info("WSClientSevereFailure");
+        logger.info("ZIQNI WS client experienced a severe failure");
     }
 
     private void scheduleReconnectWatcher(){
@@ -136,5 +141,19 @@ public class ZiqniAdmin {
         logger.info("+++ Shut down tasks completed for engine app for project [{}] and user [{}]", configuration.getAdminClientIdentityProjectUrl(), configuration.getAdminClientIdentityUser());
         if(ziqniAdminApiFactory.getStreamingClient()!=null)
             ziqniAdminApiFactory.getStreamingClient().stop();
+    }
+
+    public ZiqniSystemCallbackWatcher getZiqniSystemCallbackWatcher() {
+        return ziqniSystemCallbackWatcher;
+    }
+
+    @Subscribe
+    public void onEntityChanged(EntityChanged entityChanged){
+        logger.info(entityChanged.toString());
+    }
+
+    @Subscribe
+    public void onEntityStateChanged(EntityStateChanged entityStateChanged){
+        logger.info(entityStateChanged.toString());
     }
 }

@@ -26,8 +26,6 @@ public class Stores {
     private final AwardStore awardStore;
     private final UnitsOfMeasureStore unitsOfMeasureStore;
 
-    private final Set<? extends Store<?>> subscribedToCallbacks;
-
     public Stores(@NonNull ZiqniAdminApiFactory ziqniAdminApiFactory, @NonNull ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
         this.ziqniAdminApiFactory = ziqniAdminApiFactory;
         this.ziqniSystemCallbackWatcher = ziqniSystemCallbackWatcher;
@@ -42,18 +40,6 @@ public class Stores {
         this.rewardStore = new RewardStore(ziqniAdminApiFactory, ziqniSystemCallbackWatcher);
         this.awardStore = new AwardStore(ziqniAdminApiFactory, ziqniSystemCallbackWatcher);
         this.unitsOfMeasureStore = new UnitsOfMeasureStore(ziqniAdminApiFactory, ziqniSystemCallbackWatcher);
-
-        this.subscribedToCallbacks = Set.of(
-                this.membersStore,
-                this.productsStore,
-                this.actionTypesStore,
-                this.achievementsStore,
-                this.competitionsStore,
-                this.contestsStore,
-                this.rewardStore,
-                this.awardStore,
-                this.unitsOfMeasureStore
-        );
     }
 
     public ZiqniAdminApiFactory getZiqniAdminApiFactory() {
@@ -67,12 +53,6 @@ public class Stores {
                         this.unitsOfMeasureStore.start() )
                 .orTimeout(5L, TimeUnit.MINUTES)
                 .thenApply(unused -> this);
-    }
-
-    public void registerSubscribers() {
-        this.subscribedToCallbacks.forEach(store ->
-                this.ziqniSystemCallbackWatcher.subscribeToEntityChanges(store.getTypeClass())
-        );
     }
 
     public EventsStore getEventsStore() {

@@ -37,7 +37,7 @@ public abstract class Store<T> implements AsyncCacheLoader<@NonNull String, @Non
                 .buildAsync(this);
     }
 
-    public void init(){
+    public void subscribeToEntityChanges(){
         this.ziqniSystemCallbackWatcher.subscribeToEntityChanges(getTypeClass());
     }
 
@@ -55,19 +55,5 @@ public abstract class Store<T> implements AsyncCacheLoader<@NonNull String, @Non
         return in;
     }
 
-    @Subscribe
-    public void onEntityChanged(EntityChanged entityChanged){
-        if(getSimpleTypeClassName().equals(entityChanged.getEntityType()) && Objects.nonNull(entityChanged.getEntityRefId())) {
-//            final var exists = this.cache.getIfPresent(entityChanged.getEntityRefId());
-//            if(Objects.nonNull(exists)){
-//                asyncReload()
-//            }
-        }
-    }
 
-    @Subscribe
-    public void onEntityStateChanged(EntityStateChanged entityStateChanged){
-        if(getSimpleTypeClassName().equals(entityStateChanged.getEntityType())) {
-        }
-    }
 }

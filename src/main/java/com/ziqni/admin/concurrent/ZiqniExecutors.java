@@ -9,9 +9,7 @@ public abstract class ZiqniExecutors {
 
     // MANAGEMENT BUS //
     private static final ZiqniLinkedBlockingQueue<Runnable> ManagementBusWorkQueue = new ZiqniLinkedBlockingQueue<>("ziqni-management-bus", 1000);
-    public static final ThreadPoolExecutor LaunchControlManagementExecutor = ZiqniExecutors.newSingleThreadedExecutor(ManagementBusWorkQueue,"ziqni-management-bus");
 
-    public static final ScheduledThreadPoolExecutor HeartbeatScheduledExecutor = ZiqniExecutors.newSingleThreadScheduledExecutor("ziqni-heartbeat");
     public static final ScheduledThreadPoolExecutor ReconnectScheduledExecutor = ZiqniExecutors.newSingleThreadScheduledExecutor("ziqni-reconnect");
 
     // COMMON SINGLE THREADED RATE REDUCER //

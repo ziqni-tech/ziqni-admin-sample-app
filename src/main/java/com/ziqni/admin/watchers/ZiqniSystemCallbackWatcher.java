@@ -11,23 +11,20 @@ import org.springframework.messaging.simp.stomp.StompHeaders;
 
 import java.util.List;
 
-public class ZiqniSystemCallbackWatcher {
+public class ZiqniSystemCallbackWatcher extends ZiqniEventBus {
 
     private static final Logger logger = LoggerFactory.getLogger(ZiqniSystemCallbackWatcher.class);
 
     private final EntityChangesApiWs entityChangesApi;
-    private final ZiqniEventBus ziqniEventBus;
-
 
     public ZiqniSystemCallbackWatcher(ZiqniAdminApiFactory ziqniAdminApiFactory) {
         this(new ZiqniEventBus(),ziqniAdminApiFactory);
     }
     public ZiqniSystemCallbackWatcher(ZiqniEventBus ziqniEventBus, ZiqniAdminApiFactory ziqniAdminApiFactory) {
-        this.ziqniEventBus = ziqniEventBus;
         this.entityChangesApi = ziqniAdminApiFactory.getEntityChangesApi();
     }
 
-    public void load(){
+    public void register(){
         this.entityChangesApi.entityChangedHandler(this::onEntityChanged, this::onEntityChangedException);
         this.entityChangesApi.entityStateChangedHandler(this::onEntityStateChanged, this::onEntityStateChangedException);
     }
@@ -44,14 +41,14 @@ public class ZiqniSystemCallbackWatcher {
     }
 
     private void onEntityChanged(StompHeaders stompHeaders, EntityChanged entityChanged){
-        this.ziqniEventBus.postEntityChangedEventBus(entityChanged);
+        this.postEntityChangedEventBus(entityChanged);
     }
     private void onEntityChangedException(StompHeaders stompHeaders, ApiException apiException){
         logger.error("Failed to process onEntityChanged", apiException.getCause());
     }
 
     private void onEntityStateChanged(StompHeaders stompHeaders, EntityStateChanged entityStateChanged){
-        this.ziqniEventBus.postEntityChangedEventBus(entityStateChanged);
+        this.postEntityChangedEventBus(entityStateChanged);
     }
     private void onEntityStateChangedException(StompHeaders stompHeaders, ApiException apiException){
         logger.error("Failed to process onEntityStateChanged", apiException.getCause());
