@@ -8,6 +8,7 @@ import com.ziqni.admin.sdk.context.WSClientConnected;
 import com.ziqni.admin.sdk.context.WSClientConnecting;
 import com.ziqni.admin.sdk.context.WSClientDisconnected;
 import com.ziqni.admin.sdk.context.WSClientSevereFailure;
+import com.ziqni.admin.sdk.model.CreateMemberRequest;
 import com.ziqni.admin.sdk.model.EntityChanged;
 import com.ziqni.admin.sdk.model.EntityStateChanged;
 import org.slf4j.Logger;
@@ -82,5 +83,14 @@ public class SampleApplication implements Runnable {
     @Override
     public void run() {
         this.ticker.schedule(this, 5, TimeUnit.SECONDS);
+//        Create/update a member [player]
+//        this.ziqniAdmin.getZiqniStores().getMembersStore().createMember(new CreateMemberRequest()
+//                .name()
+//                .memberRefId()
+//                .tags() <- User groups or other classification of your population
+//        );
+
+        // Create an action type like, buy, return, win, stake etc
+//        this.ziqniAdmin.getZiqniStores().getActionTypesStore().create()
     }
 }

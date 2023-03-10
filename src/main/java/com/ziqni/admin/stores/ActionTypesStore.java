@@ -2,6 +2,7 @@ package com.ziqni.admin.stores;
 
 import com.github.benmanes.caffeine.cache.*;
 import com.ziqni.admin.collections.Tuple;
+import com.ziqni.admin.concurrent.QueueJob;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
 import com.ziqni.admin.exceptions.TooManyRecordsException;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
@@ -72,35 +73,39 @@ public class ActionTypesStore extends Store<ActionType> {
 	/**
 	 * Create
 	 **/
-//	public CompletableFuture<Optional<Result>> create(final String action, Option<String> name, Option<scala.collection.Map<String, String>> metaData, String unitOfMeasureKey) {
-//		return QueueJob.Submit(ZiqniExecutors.StoresSingleThreadedExecutor, () -> {
+	public CompletableFuture<Optional<Result>> create(final String actionKey, String name, String unitOfMeasureKey) {
+		return QueueJob.Submit(ZiqniExecutors.StoresSingleThreadedExecutor, () -> {
 //			var meta = setMetadata(metaData);
-//			var toCreate=  new CreateActionTypeRequest()
-//					.key(action)
-//					.name(name.getOrElse(() -> action))
+			var toCreate=  new CreateActionTypeRequest()
+					.key(actionKey)
+					.name(Objects.nonNull(name)?name:actionKey)
 //					.metadata(meta)
-//					.unitOfMeasure(unitOfMeasureKey);
-//
-//			return getZiqniAdminApiFactory().getActionTypesApi().createActionTypes(List.of(toCreate))
-//					.orTimeout(5, TimeUnit.SECONDS)
-//					.thenApply(modelApiResponse -> {
-//
-//						Optional.ofNullable(modelApiResponse.getErrors()).ifPresent(e -> {
-//							if (!e.isEmpty())
-//								logger.debug(e.toString());
-//						});
-//
-//						return Optional.ofNullable(modelApiResponse.getResults()).flatMap(results -> results
-//								.stream()
-//								.filter(x -> x.getExternalReference().equals(action))
-//								.findFirst().map(result -> {
-//									put(new ActionType( action, result.getId(), toCreate.getName() ));
-//									return result;
-//								})
-//						);
-//					});
-//		});
-//	}
+					.unitOfMeasure(unitOfMeasureKey);
+
+			return getZiqniAdminApiFactory().getActionTypesApi().createActionTypes(List.of(toCreate))
+					.orTimeout(5, TimeUnit.SECONDS)
+					.thenApply(modelApiResponse -> {
+
+						Optional.ofNullable(modelApiResponse.getErrors()).ifPresent(e -> {
+							if (!e.isEmpty())
+								logger.debug(e.toString());
+						});
+
+						return Optional.ofNullable(modelApiResponse.getResults()).flatMap(results -> results
+								.stream()
+								.filter(x -> x.getExternalReference().equals(actionKey))
+								.findFirst().map(result -> {
+									put( new ActionType()
+											.key(actionKey)
+											.id(result.getId())
+											.name(toCreate.getName())
+									);
+									return result;
+								})
+						);
+					});
+		});
+	}
 
 	public void put(ActionType actionType){
 		final var fut = new CompletableFuture<ActionType>();
