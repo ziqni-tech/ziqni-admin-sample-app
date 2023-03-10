@@ -140,14 +140,4 @@ public class ZiqniAdmin {
         if(ziqniAdminApiFactory.getStreamingClient()!=null)
             ziqniAdminApiFactory.getStreamingClient().stop();
     }
-
-    @Subscribe
-    public void onEntityChanged(EntityChanged entityChanged){
-        logger.info(entityChanged.toString());
-    }
-
-    @Subscribe
-    public void onEntityStateChanged(EntityStateChanged entityStateChanged){
-        logger.info(entityStateChanged.toString());
-    }
 }
