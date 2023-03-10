@@ -2,8 +2,6 @@ package com.ziqni.admin;
 
 import com.google.common.eventbus.Subscribe;
 import com.ziqni.admin.concurrent.ZiqniExecutors;
-import com.ziqni.admin.sdk.model.EntityChanged;
-import com.ziqni.admin.sdk.model.EntityStateChanged;
 import com.ziqni.admin.watchers.ZiqniSystemCallbackWatcher;
 import com.ziqni.admin.sdk.ZiqniAdminApiFactory;
 import com.ziqni.admin.sdk.configuration.AdminApiClientConfiguration;

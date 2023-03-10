@@ -116,57 +116,61 @@ public class ActionTypesStore extends Store<ActionType> {
 	/**
 	 * Update
 	 **/
-//	public CompletableFuture<ModelApiResponse> update(String action, Option<String> name, Option<scala.collection.Map<String, String>> metaData, Option<String> unitOfMeasureType) {
-//
-//		final CompletableFuture<Optional<UpdateAction>> search = cache.get(action)
-//				.thenApply(Optional::ofNullable)
-//				.thenApply(actionType -> actionType.map( found -> {
-//
+	public CompletableFuture<ModelApiResponse> update(String action, String name, String unitOfMeasureType) {
+
+		final CompletableFuture<Optional<UpdateAction>> search = cache.get(action)
+				.thenApply(Optional::ofNullable)
+				.thenApply(actionType -> actionType.map( found -> {
+
 //					var meta = setMetadata(metaData);
-//					return new UpdateAction(found, new UpdateActionTypeRequest()
-//							.id(found.id)
-//							.name(name.getOrElse(() -> action))
-//							.unitOfMeasure(unitOfMeasureType.map(UnitOfMeasureType::valueOf).getOrElse(UnitOfMeasureType.OTHER::getValue))
-//							.metadata(meta));
-//
-//				})).handle((updateAction, throwable) -> {
-//					if(throwable != null){
-//						logger.error("Exception occurred while attempting to update action type", throwable);
-//						return Optional.empty();
-//					}
-//					else {
-//						return updateAction;
-//					}
-//				});
-//
-//		return search.thenCompose(updateAction -> {
-//			if(updateAction.isPresent()){
-//				return getZiqniAdminApiFactory().getActionTypesApi().updateActionTypes(List.of(updateAction.get().two)).orTimeout(5, TimeUnit.SECONDS)
-//						.thenApply(modelApiResponse -> {
-//
-//							var r1 = Optional.ofNullable(modelApiResponse.getResults()).flatMap(results -> {
-//								final var out = results.stream()
-//										.filter(x -> x.getExternalReference() != null && x.getExternalReference().equals(action))
-//										.map(result -> {
-//											put(updateAction.get().one
-//													.setName(updateAction.get().two.getName())
-//													.setId(result.getId())
-//											);
-//											return result;
-//										}).findFirst();
-//								return out;
-//							});
-//
-//							return modelApiResponse;
-//						});
-//			}
-//			else {
-//				final var oops = new CompletableFuture<ModelApiResponse>();
-//				oops.completeExceptionally(new Throwable("Not found"));
-//				return oops;
-//			}
-//		});
-//	}
+					return new UpdateAction(found, new UpdateActionTypeRequest()
+							.id(found.getId())
+							.name(Objects.nonNull(name) ? name : action )
+							.unitOfMeasure(Objects.nonNull(unitOfMeasureType)
+									? UnitOfMeasureType.valueOf(unitOfMeasureType).getValue()
+									: UnitOfMeasureType.OTHER.getValue()
+							)
+//							.metadata(meta)
+					);
+
+				})).handle((updateAction, throwable) -> {
+					if(throwable != null){
+						logger.error("Exception occurred while attempting to update action type", throwable);
+						return Optional.empty();
+					}
+					else {
+						return updateAction;
+					}
+				});
+
+		return search.thenCompose(updateAction -> {
+			if(updateAction.isPresent()){
+				return getZiqniAdminApiFactory().getActionTypesApi().updateActionTypes(List.of(updateAction.get().two)).orTimeout(5, TimeUnit.SECONDS)
+						.thenApply(modelApiResponse -> {
+
+							var r1 = Optional.ofNullable(modelApiResponse.getResults()).flatMap(results -> {
+								final var out = results.stream()
+										.filter(x -> x.getExternalReference() != null && x.getExternalReference().equals(action))
+										.map(result -> {
+											put(updateAction.get().one
+													.name(updateAction.get().two.getName())
+													.id(result.getId())
+											);
+											return result;
+										}).findFirst();
+								return out;
+							});
+
+							return modelApiResponse;
+						});
+			}
+			else {
+				final var oops = new CompletableFuture<ModelApiResponse>();
+				oops.completeExceptionally(new Throwable("Not found"));
+				return oops;
+			}
+		});
+	}
 
 	/**
 	 * Asynchronously computes or retrieves the value corresponding to {@code key}.

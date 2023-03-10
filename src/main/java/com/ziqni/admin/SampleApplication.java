@@ -8,7 +8,6 @@ import com.ziqni.admin.sdk.context.WSClientConnected;
 import com.ziqni.admin.sdk.context.WSClientConnecting;
 import com.ziqni.admin.sdk.context.WSClientDisconnected;
 import com.ziqni.admin.sdk.context.WSClientSevereFailure;
-import com.ziqni.admin.sdk.model.CreateMemberRequest;
 import com.ziqni.admin.sdk.model.EntityChanged;
 import com.ziqni.admin.sdk.model.EntityStateChanged;
 import org.slf4j.Logger;
