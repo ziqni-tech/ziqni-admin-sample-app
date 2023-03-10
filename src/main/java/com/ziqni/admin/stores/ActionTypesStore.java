@@ -23,13 +23,6 @@ public class ActionTypesStore extends Store<ActionType> {
 
 	private static final Logger logger = LoggerFactory.getLogger(ActionTypesStore.class);
 
-	public final AsyncLoadingCache<String, ActionType> cache = Caffeine
-			.newBuilder()
-			.maximumSize(10_000)
-			.expireAfterAccess(1, TimeUnit.DAYS)
-			.executor(ZiqniExecutors.GlobalZiqniCachesExecutor)
-			.evictionListener(this).buildAsync(this);
-
 	public ActionTypesStore(ZiqniAdminApiFactory ziqniAdminApiFactory, ZiqniSystemCallbackWatcher ziqniSystemCallbackWatcher) {
 		super(ziqniAdminApiFactory,ziqniSystemCallbackWatcher, DEFAULT_CACHE_EXPIRE_MINUTES_AFTER_ACCESS, DEFAULT_CACHE_MAXIMUM_SIZE);
 	}
