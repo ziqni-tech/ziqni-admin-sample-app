@@ -50,32 +50,32 @@ public class SampleApplication implements Runnable {
     }
 
     @Subscribe
-    public void onWSClientConnected(WSClientConnected change) {
+    public void onZiqniAdminConnected(WSClientConnected change) {
         logger.info("+++++ ZIQNI connected, {}", change);
     }
 
     @Subscribe
-    public void onWSClientConnecting(WSClientConnecting change) {
+    public void onZiqniAdminConnecting(WSClientConnecting change) {
         logger.info("+++++ ZIQNI connecting, {}", change);
     }
 
     @Subscribe
-    public void onWSClientDisconnected(WSClientDisconnected change){
+    public void onZiqniAdminDisconnected(WSClientDisconnected change){
         logger.info("+++++ ZIQNI disconnected, {}", change);
     }
 
     @Subscribe
-    public void onWSClientSevereFailure(WSClientSevereFailure change){
+    public void onZiqniAdminSevereFailure(WSClientSevereFailure change){
         logger.info("+++++  ZIQNI websocket client experienced a severe failure, {}", change);
     }
 
     @Subscribe
-    public void onEntityChanged(EntityChanged entityChanged){
+    public void onZiqniAdminEntityChanged(EntityChanged entityChanged){
         logger.info("+++++  ZIQNI entity changed, {}", entityChanged);
     }
 
     @Subscribe
-    public void onEntityStateChanged(EntityStateChanged entityStateChanged){
+    public void onZiqniAdminEntityStateChanged(EntityStateChanged entityStateChanged){
         logger.info("+++++  ZIQNI entity state changed, {}", entityStateChanged);
     }
 
