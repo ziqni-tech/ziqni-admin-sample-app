@@ -55,7 +55,7 @@ public class ContestsStore extends Store<@NonNull Contest> {
 	public CompletableFuture<? extends Map<? extends @NonNull String, ? extends @NonNull Contest>> asyncLoadAll(Set<? extends @NonNull String> keys, Executor executor) throws Exception {
 		TooManyRecordsException.Validate(20,0, keys.size());
 
-		return getZiqniAdminApiFactory().getContestsApi().getContests(new ArrayList<>(keys), 1, 0)
+		return getZiqniAdminApiFactory().getContestsApi().getContests(new ArrayList<>(keys), keys.size(), 0)
 				.orTimeout(5, TimeUnit.SECONDS)
 				.thenApply(response -> {
 					Optional.ofNullable(response.getErrors()).ifPresent(e -> {

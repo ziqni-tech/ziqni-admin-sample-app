@@ -52,7 +52,7 @@ public class CompetitionsStore extends Store<@NonNull Competition> {
 	public CompletableFuture<? extends Map<? extends @NonNull String, ? extends @NonNull Competition>> asyncLoadAll(Set<? extends @NonNull String> keys, Executor executor) throws Exception {
 		TooManyRecordsException.Validate(20,0, keys.size());
 
-		return getZiqniAdminApiFactory().getCompetitionsApi().getCompetitions(new ArrayList<>(keys), 1, 0)
+		return getZiqniAdminApiFactory().getCompetitionsApi().getCompetitions(new ArrayList<>(keys), keys.size(), 0)
 				.orTimeout(5, TimeUnit.SECONDS)
 				.thenApply(response -> {
 					Optional.ofNullable(response.getErrors()).ifPresent(e -> {
