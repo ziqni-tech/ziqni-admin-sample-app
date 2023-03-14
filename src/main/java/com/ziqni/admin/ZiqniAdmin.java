@@ -40,6 +40,7 @@ public class ZiqniAdmin {
         this.ziqniAdminApiFactory.initialise();
 
         if(configuration.isWebsocket()) {
+
             while (ziqniAdminApiFactory.getStreamingClient() == null) {
                 Thread.sleep(500);
                 logger.info("+++ Initializing the streaming client");
