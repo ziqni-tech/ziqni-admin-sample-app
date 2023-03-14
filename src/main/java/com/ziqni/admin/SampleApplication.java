@@ -25,9 +25,11 @@ public class SampleApplication implements Runnable {
 
     public static void main( String[] args ) throws Exception {
 
-        logger.info("+++++ ZIQNI Build Version: {} +++++", "2023-02-09-00-00. Let's light this candle!");
-        var configuration = AdminApiClientConfigBuilder.build();
-        new ZiqniAdmin(configuration).launch(SampleApplication::new);
+        ZiqniAdmin.launch(
+                AdminApiClientConfigBuilder.build(),
+                SampleApplication::new
+        );
+
         Thread.setDefaultUncaughtExceptionHandler(new GlobalExceptionHandler());
     }
 

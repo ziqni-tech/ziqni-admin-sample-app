@@ -35,46 +35,50 @@ public class ZiqniAdmin {
         this.ziqniAdminApiFactory.getZiqniAdminEventBus().register(this);
     }
 
-    public ZiqniAdmin launch(Consumer<ZiqniAdmin> onLaunched) throws Exception {
+    public static ZiqniAdmin launch(AdminApiClientConfiguration configuration, Consumer<ZiqniAdmin> onLaunched) throws Exception {
+        final var out = new ZiqniAdmin(configuration);
+
         logger.info("*** Ignition sequence started, Let's light up this candle! ***");
-        this.ziqniAdminApiFactory.initialise();
+        out.getZiqniAdminApiFactory().initialise();
 
         if(configuration.isWebsocket()) {
 
-            while (ziqniAdminApiFactory.getStreamingClient() == null) {
+            while (out.getZiqniAdminApiFactory().getStreamingClient() == null) {
                 Thread.sleep(500);
                 logger.info("+++ Initializing the streaming client");
             }
 
             final AtomicInteger counter = new AtomicInteger(0);
-            final var started = ziqniAdminApiFactory.getStreamingClient().start();
-            while (!ziqniAdminApiFactory.getStreamingClient().isConnected()) {
+            final var started = out.getZiqniAdminApiFactory().getStreamingClient().start();
+
+            while (!out.getZiqniAdminApiFactory().getStreamingClient().isConnected()) {
                 Thread.sleep(500);
                 logger.info("+++ Waiting for the streaming client to start [{}]",counter.incrementAndGet());
             }
+
             logger.info("+++ Started the streaming client");
         }
         else
             throw new RuntimeException("+++ Only socket based communications is used for this platform");
 
-        ziqniStores
+        out.getZiqniStores()
                 .start()
                 .exceptionally(throwable -> {
                     logger.error("Failed to load the cache stores", throwable);
                     return null;
                 })
                 .thenAccept(stores -> {
-                    this.ziqniSystemCallbackWatcher.register();
+                    out.ziqniSystemCallbackWatcher.register();
                 });
 
         // implement shutdown hook
         Runtime.getRuntime().addShutdownHook( new Thread(() ->
-                ZiqniAdmin.shutdownHook(ziqniAdminApiFactory, configuration))
+                ZiqniAdmin.shutdownHook(out.getZiqniAdminApiFactory(), configuration))
         );
 
-        onLaunched.accept(this);
+        onLaunched.accept(out);
 
-        return this;
+        return out;
     }
 
     public Stores getZiqniStores() {
