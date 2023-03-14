@@ -81,7 +81,6 @@ public class SampleApplication implements Runnable {
 
     @Override
     public void run() {
-        this.ticker.schedule(this, 5, TimeUnit.SECONDS);
 
 //        this.ziqniAdmin.getZiqniStores().getMembersStore().getMemberByRefId("3596684600255879")
 //                .thenAccept(member ->
@@ -103,5 +102,7 @@ public class SampleApplication implements Runnable {
 //
 //         Create an action type like, buy, return, win, stake etc
 //        this.ziqniAdmin.getZiqniStores().getActionTypesStore().create()
+
+        this.ticker.schedule(this, 5, TimeUnit.SECONDS);
     }
 }
