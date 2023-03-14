@@ -38,7 +38,7 @@ public class RewardStore extends Store<@NonNull Reward> {
 
     @Override
     public Class<@NonNull Reward> getTypeClass() {
-        return null;
+        return Reward.class;
     }
 
     public CompletableFuture<Optional<Reward>> getReward(String id) {
@@ -55,7 +55,7 @@ public class RewardStore extends Store<@NonNull Reward> {
         TooManyRecordsException.Validate(20,0, keys.size());
 
         return getZiqniAdminApiFactory().getRewardsApi().getRewards(new ArrayList<>(keys), keys.size(), 0)
-                .orTimeout(5, TimeUnit.SECONDS)
+                
                 .thenApply(response -> {
                     Optional.ofNullable(response.getErrors()).ifPresent(e -> {
                         if(!e.isEmpty())

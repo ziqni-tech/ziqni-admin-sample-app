@@ -65,7 +65,6 @@ public class AchievementsStore extends Store<@NonNull Achievement>{
 		TooManyRecordsException.Validate(20,0, keys.size());
 
 		return getZiqniAdminApiFactory().getAchievementsApi().getAchievements(new ArrayList<>(keys), keys.size(), 0)
-				.orTimeout(5, TimeUnit.SECONDS)
 				.thenApply(response -> {
 					Optional.ofNullable(response.getErrors()).ifPresent(e -> {
 						if(!e.isEmpty())

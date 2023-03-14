@@ -56,7 +56,7 @@ public class ContestsStore extends Store<@NonNull Contest> {
 		TooManyRecordsException.Validate(20,0, keys.size());
 
 		return getZiqniAdminApiFactory().getContestsApi().getContests(new ArrayList<>(keys), keys.size(), 0)
-				.orTimeout(5, TimeUnit.SECONDS)
+				
 				.thenApply(response -> {
 					Optional.ofNullable(response.getErrors()).ifPresent(e -> {
 						if(!e.isEmpty())

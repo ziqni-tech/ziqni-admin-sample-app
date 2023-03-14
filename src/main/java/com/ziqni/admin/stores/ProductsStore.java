@@ -49,7 +49,7 @@ public class ProductsStore extends Store<@NonNull Product> {
 				productRefId,
 				rid ->
 						api.getProductsByRefId(List.of(productRefId), 1, 0)
-								.orTimeout(5, TimeUnit.SECONDS)
+								
 								.thenApply(productResponse -> {
 									Optional.ofNullable(productResponse.getErrors()).ifPresent(e -> {
 										if(!e.isEmpty())
@@ -98,7 +98,7 @@ public class ProductsStore extends Store<@NonNull Product> {
 //							.metadata(meta);
 //
 //					return api.createProducts(List.of(productToCreate))
-//							.orTimeout(5, TimeUnit.SECONDS)
+//							
 //							.thenApply(modelApiResponse -> {
 //
 //								Optional.ofNullable(modelApiResponse.getErrors()).ifPresent(e -> {
@@ -172,7 +172,7 @@ public class ProductsStore extends Store<@NonNull Product> {
 	 **/
 	public CompletableFuture<Optional<Result>> delete(String productId) {
 		return api.deleteProducts(List.of(productId))
-				.orTimeout(5, TimeUnit.SECONDS)
+				
 				.thenApply(modelApiResponse ->
 					Optional.ofNullable(modelApiResponse.getResults()).flatMap(results -> results.stream()
 							.filter(x->x.getId().equalsIgnoreCase(productId))
@@ -234,7 +234,7 @@ public class ProductsStore extends Store<@NonNull Product> {
 				);
 
 		return api.getProductsByQuery(query)
-				.orTimeout(5, TimeUnit.SECONDS)
+				
 				.thenApply(response -> {
 					Optional.ofNullable(response.getErrors()).ifPresent(e -> {
 						if(!e.isEmpty())
@@ -246,7 +246,7 @@ public class ProductsStore extends Store<@NonNull Product> {
 								refIdCache.put(item.getProductRefId(), item.getId())
 						);
 
-						return response.getResults().stream().collect(Collectors.toMap(Product::getId,x->x));
+						return response.getResults().stream().collect(Collectors.toMap(Product::getProductRefId,x->x));
 					}
 					else
 						return null;

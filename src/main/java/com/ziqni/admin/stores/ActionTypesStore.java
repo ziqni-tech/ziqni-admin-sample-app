@@ -76,7 +76,7 @@ public class ActionTypesStore extends Store<ActionType> {
 					.unitOfMeasure(unitOfMeasureKey);
 
 			return getZiqniAdminApiFactory().getActionTypesApi().createActionTypes(List.of(toCreate))
-					.orTimeout(5, TimeUnit.SECONDS)
+					
 					.thenApply(modelApiResponse -> {
 
 						Optional.ofNullable(modelApiResponse.getErrors()).ifPresent(e -> {
@@ -138,7 +138,7 @@ public class ActionTypesStore extends Store<ActionType> {
 
 		return search.thenCompose(updateAction -> {
 			if(updateAction.isPresent()){
-				return getZiqniAdminApiFactory().getActionTypesApi().updateActionTypes(List.of(updateAction.get().two)).orTimeout(5, TimeUnit.SECONDS)
+				return getZiqniAdminApiFactory().getActionTypesApi().updateActionTypes(List.of(updateAction.get().two))
 						.thenApply(modelApiResponse -> {
 
 							var r1 = Optional.ofNullable(modelApiResponse.getResults()).flatMap(results -> {
@@ -215,7 +215,7 @@ public class ActionTypesStore extends Store<ActionType> {
 				);
 
 		return getZiqniAdminApiFactory().getActionTypesApi().getActionTypesByQuery(query)
-				.orTimeout(5, TimeUnit.SECONDS)
+				
 				.thenApply(actionTypeResponse -> {
 
 					Optional.ofNullable(actionTypeResponse.getErrors()).ifPresent(e -> {

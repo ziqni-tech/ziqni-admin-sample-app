@@ -53,7 +53,7 @@ public class CompetitionsStore extends Store<@NonNull Competition> {
 		TooManyRecordsException.Validate(20,0, keys.size());
 
 		return getZiqniAdminApiFactory().getCompetitionsApi().getCompetitions(new ArrayList<>(keys), keys.size(), 0)
-				.orTimeout(5, TimeUnit.SECONDS)
+				
 				.thenApply(response -> {
 					Optional.ofNullable(response.getErrors()).ifPresent(e -> {
 						if(!e.isEmpty())

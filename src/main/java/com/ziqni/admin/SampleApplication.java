@@ -82,14 +82,26 @@ public class SampleApplication implements Runnable {
     @Override
     public void run() {
         this.ticker.schedule(this, 5, TimeUnit.SECONDS);
+
+//        this.ziqniAdmin.getZiqniStores().getMembersStore().getMemberByRefId("3596684600255879")
+//                .thenAccept(member ->
+//                        logger.info(member.toString())
+//                )
+//                .exceptionally(throwable -> {
+//                    logger.error("Failed to get the member response",throwable);
+//                    return null;
+//                })
+//                .join();
+
+
 //        Create/update a member [player]
 //        this.ziqniAdmin.getZiqniStores().getMembersStore().createMember(new CreateMemberRequest()
 //                .name()
 //                .memberRefId()
 //                .tags() <- User groups or other classification of your population
 //        );
-
-        // Create an action type like, buy, return, win, stake etc
+//
+//         Create an action type like, buy, return, win, stake etc
 //        this.ziqniAdmin.getZiqniStores().getActionTypesStore().create()
     }
 }

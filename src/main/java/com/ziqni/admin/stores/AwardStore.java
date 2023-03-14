@@ -55,7 +55,7 @@ public class AwardStore extends Store<@NonNull Award> {
         TooManyRecordsException.Validate(20,0, keys.size());
 
         return getZiqniAdminApiFactory().getAwardsApi().getAwards(new ArrayList<>(keys), keys.size(), 0)
-                .orTimeout(5, TimeUnit.SECONDS)
+                
                 .thenApply(response -> {
                     Optional.ofNullable(response.getErrors()).ifPresent(e -> {
                         if(!e.isEmpty())

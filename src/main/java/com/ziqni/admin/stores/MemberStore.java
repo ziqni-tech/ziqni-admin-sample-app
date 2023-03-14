@@ -54,7 +54,6 @@ public class MemberStore extends Store<@NonNull Member> {
                 );
 
         return getZiqniAdminApiFactory().getMembersApi().getMembersByQuery(query)
-                .orTimeout(5, TimeUnit.SECONDS)
                 .thenApply(response -> {
 
                     Optional.ofNullable(response.getErrors()).ifPresent(e -> {
@@ -62,13 +61,11 @@ public class MemberStore extends Store<@NonNull Member> {
                             logger.error(e.toString());
                     });
 
-                    return Optional.ofNullable(response.getResults()).map(results ->
-                            results.stream().map(member -> {
-                                idCache.compute(member.getId(),(s, s2) ->  member.getMemberRefId());
-                                return member;
-
-                            }).collect(Collectors.toMap(Member::getId, x->x))
+                    var out =  Optional.ofNullable(response.getResults()).map(results ->
+                            results.stream().peek(member -> idCache.compute(member.getId(),(s, s2) ->  member.getMemberRefId())).collect(Collectors.toMap(Member::getMemberRefId, x->x))
                     ).orElse(Map.of());
+
+                    return out;
                 });
     }
 
@@ -78,5 +75,9 @@ public class MemberStore extends Store<@NonNull Member> {
             idCache.computeIfPresent(value.getId(), (s, s2) -> null);
             logger.debug("Removing member {} [ ID:{} | REF:{} ]", value.getName(), value.getId(), value.getMemberRefId());
         }
+    }
+
+    public CompletableFuture<@NonNull Member> getMemberByRefId(String memberRefId) {
+        return this.cache.get(memberRefId);
     }
 }

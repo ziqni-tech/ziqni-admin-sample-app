@@ -56,28 +56,23 @@ public class ZiqniAdmin {
         else
             throw new RuntimeException("+++ Only socket based communications is used for this platform");
 
-        try {
-            ziqniStores
-                    .start()
-                    .exceptionally(throwable -> {
-                        logger.error("Failed to load the cache stores", throwable);
-                        return null;
-                    })
-                    .thenAccept(stores -> {
-                        this.ziqniSystemCallbackWatcher.register();
-                    });
+        ziqniStores
+                .start()
+                .exceptionally(throwable -> {
+                    logger.error("Failed to load the cache stores", throwable);
+                    return null;
+                })
+                .thenAccept(stores -> {
+                    this.ziqniSystemCallbackWatcher.register();
+                });
 
-            // implement shutdown hook
-            Runtime.getRuntime().addShutdownHook( new Thread(() ->
-                    ZiqniAdmin.shutdownHook(ziqniAdminApiFactory, configuration))
-            );
-
-        } catch (Exception e) {
-            logger.error("Failed to launch", e);
-            throw e;
-        }
+        // implement shutdown hook
+        Runtime.getRuntime().addShutdownHook( new Thread(() ->
+                ZiqniAdmin.shutdownHook(ziqniAdminApiFactory, configuration))
+        );
 
         onLaunched.accept(this);
+
         return this;
     }
 
