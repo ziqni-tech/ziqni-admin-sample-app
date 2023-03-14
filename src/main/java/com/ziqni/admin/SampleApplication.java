@@ -21,7 +21,6 @@ public class SampleApplication implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(SampleApplication.class);
 
     private final ScheduledThreadPoolExecutor ticker;
-    private final ZiqniAdmin ziqniAdmin;
 
     public static void main( String[] args ) throws Exception {
 
@@ -34,7 +33,6 @@ public class SampleApplication implements Runnable {
     }
 
     public SampleApplication(ZiqniAdmin ziqniAdmin) {
-        this.ziqniAdmin = ziqniAdmin;
 
         ziqniAdmin.registerToReceiveEvents(this);
 
@@ -58,17 +56,17 @@ public class SampleApplication implements Runnable {
 
     @Subscribe
     public void onZiqniAdminConnecting(WSClientConnecting change) {
-        logger.info("+++++ ZIQNI connecting, {}", change);
+        logger.info("+++++ ZIQNI admin api connecting, {}", change);
     }
 
     @Subscribe
     public void onZiqniAdminDisconnected(WSClientDisconnected change){
-        logger.info("+++++ ZIQNI disconnected, {}", change);
+        logger.info("+++++ ZIQNI admin api disconnected, {}", change);
     }
 
     @Subscribe
     public void onZiqniAdminSevereFailure(WSClientSevereFailure change){
-        logger.info("+++++  ZIQNI websocket client experienced a severe failure, {}", change);
+        logger.info("+++++  ZIQNI admin api experienced a severe failure, {}", change);
     }
 
     @Subscribe
